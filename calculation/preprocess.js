@@ -17,26 +17,37 @@ function splitSections() {
     //    check if next Coords are within the section
     //    create new grid if right & down are within bound
     (function splitSectionOne() {
-    //    start from top left
-        let sectionOne = Object.assign({}, MesaCity.sections.sectionOne);
+        let sectionOne = utils.CloneObject(MesaCity.sections.sectionOne);
+    //    bottom left + .1 mile is the boundary
         let bound = utils.NextBlock(sectionOne.southWest, utils.Directions.SW);
 
-        function isBounded(potentialGrid) {
-            return bound.lat < potentialGrid.lat && bound.lng < potentialGrid.lng;
+        function isBounded(coord) {
+            return bound.lat < coord.lat && bound.lng < coord.lng;
         }
 
-        let currentRow = Object.assign({}, sectionOne.northEast);
+        //    start from top left
+        let currentRow = utils.CloneObject(sectionOne.northEast);
+
         while (isBounded(currentRow)) {
             let currentColumn = utils.NextLng(currentRow, .1, utils.Directions.West);
             let rowGrids = [];
             while (isBounded(currentColumn)) {
-                //TODO: create and validate grid
+                let grid = new Grid();
+                grid.topLeft = utils.CloneObject(currentColumn);
+                grid.create();
+                rowGrids.unshift(grid);
                 currentColumn = utils.NextLng(currentColumn, .1, utils.Directions.West);
             }
             MesaCityGrid.sectionOne.push(rowGrids);
             currentRow = utils.NextLat(currentRow, .1, utils.Directions.South);
         }
-
+        for (let row of MesaCityGrid.sectionOne) {
+            console.log("new row -------------------------------------");
+            for (let col of row) {
+                console.log("new col");
+                col.log();
+            }
+        }
     }());
 
     (function splitSectionTwo() {
@@ -60,3 +71,4 @@ const main = () => {
 //    return grid
     return MesaCityGrid;
 };
+main();
