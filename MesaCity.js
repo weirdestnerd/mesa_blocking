@@ -2,10 +2,10 @@ const Coord = require('./utils').Coord;
 
 function CitySection (name) {
     this.name = name;
-    this.northEast = new Coord(null, null);
-    this.southEast = new Coord(null, null);
-    this.northWest = new Coord(null, null);
-    this.southWest = new Coord(null, null);
+    this.northEast = new Coord();
+    this.southEast = new Coord();
+    this.northWest = new Coord();
+    this.southWest = new Coord();
     this.log = () => {
         console.log("Name: %s, \nNorthEast: ", this.name);
         this.northEast.log();
@@ -55,7 +55,6 @@ function MesaCity() {
 }
 
 function getCity() {
-    console.log("s " + singleInstance);
     return singleInstance ? singleInstance : new MesaCity();
 }
 
