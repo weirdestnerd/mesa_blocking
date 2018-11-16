@@ -5,26 +5,61 @@ const degToRad = Math.PI / 180.0;
 const radToDeg = 180.0 / Math.PI;
 const Directions = new Enum(['North', 'South', 'East', 'West', 'NE', 'NW', 'SE', 'SW'], {freez: true});
 
-function Coord(lat, lng) {
+function Coord(lat = null, lng = null) {
     this.lat = lat;
     this.lng = lng;
     this.isNull = () => {
-        return (this.lat === null && this.lng === null) || (typeof(this.lat) === undefined && typeof(this.lng) === undefined);
+        return this.lat === null && this.lng === null;
     };
     this.log = () => {
         console.log("lat: %d, lng: %d", this.lat, this.lng);
     }
 }
 
-function Grid(topLeft) {
-    this.topLeft = new Coord(null, null);
-    this.topRight = new Coord(null, null);
-    this.bottomLeft = new Coord(null, null);
-    this.bottomRight = new Coord(null, null);
+function Grid() {
+    this.topLeft = new Coord();
+    this.topRight = new Coord();
+    this.bottomLeft = new Coord();
+    this.bottomRight = new Coord();
 
-    if (topLeft && typeof (topLeft) === Coord) {
-    //    TODO: create grid
-    }
+    this.create = () => {
+    //    if all corners are null, throw error
+        if (this.isEmpty()) {
+            console.error("At least one corner is needed to construct Grid");
+            return;
+        }
+    //    if topRight, then calculate topLeft & bottomRight
+        if (!this.topRight.isNull()) {
+            this.topLeft = calculateLngByDistance(this.topRight, .1, Directions.West);
+            this.bottomRight = calculateLatByDistance(this.topRight, .1, Directions.South);
+        }
+    //    if topLeft, then calculate topRight & bottomLeft
+        if (!this.topLeft.isNull()) {
+            this.topRight = calculateLngByDistance(this.topLeft, .1, Directions.East);
+            this.bottomLeft = calculateLatByDistance(this.topLeft, .1, Directions.South);
+        }
+    //    if bottomRight, then calculate bottomLeft & topRight
+        if (!this.bottomRight.isNull()) {
+            this.bottomLeft = calculateLngByDistance(this.bottomRight, .1, Directions.West);
+            this.topRight = calculateLatByDistance(this.bottomRight, .1, Directions.North);
+        }
+    //    if bottomLeft, then calculate bottomRight & topLeft
+        if (!this.bottomLeft.isNull()) {
+            this.bottomRight = calculateLngByDistance(this.bottomLeft, .1, Directions.East);
+            this.topLeft = calculateLatByDistance(this.bottomLeft, .1, Directions.North);
+        }
+    };
+
+    this.isEmpty = () => {
+        let allCorners = [this.topLeft, this.topRight, this.bottomLeft, this.bottomRight];
+
+        function isCornerNull(corner) {
+            return corner.isNull();
+        }
+
+        return allCorners.every(isCornerNull);
+    };
+
     this.log = () => {
         console.log("TopLeft: ");
         this.topLeft.log();
@@ -37,9 +72,9 @@ function Grid(topLeft) {
     };
 }
 
-function addToLat(coord, miles, direction) {
+function calculateLatByDistance(coord, miles, direction) {
     if (!(coord instanceof Coord)) {
-        console.error("Type of coord must be utils/Coord");
+        console.error("calculateLatByDistance: Type of coord must be utils/Coord");
         return
     }
     if (!Directions.isDefined(direction)) {
@@ -60,9 +95,9 @@ function addToLat(coord, miles, direction) {
     return coord;
 }
 
-function addToLong(coord, miles, direction) {
+function calculateLngByDistance(coord, miles, direction) {
     if (!(coord instanceof Coord)) {
-        console.error("Type of coord must be utils/Coord");
+        console.error("calculateLngByDistance: Type of coord must be utils/Coord");
         return
     }
     if (!Directions.isDefined(direction)) {
@@ -79,6 +114,7 @@ function addToLong(coord, miles, direction) {
         return (miles / radius) * radToDeg;
     }
 
+    coord = CloneObject(coord);
     direction === Directions.East ? coord.lng += nextLng() : coord.lng -= nextLng();
 
     return coord;
@@ -86,7 +122,7 @@ function addToLong(coord, miles, direction) {
 
 function NextBlock(coord, direction) {
     if (!(coord instanceof Coord)) {
-        console.error("Type of coord must be utils/Coord");
+        console.error("NextBlock: Type of coord must be utils/Coord");
         return
     }
     if (!Directions.isDefined(direction)) {
@@ -100,31 +136,41 @@ function NextBlock(coord, direction) {
 
     switch (direction) {
         case Directions.NE:
-            coord.lat = addToLat(coord, .1, Directions.North).lat;
-            coord.lng = addToLong(coord, .1, Directions.East).lng;
+            coord.lat = calculateLatByDistance(coord, .1, Directions.North).lat;
+            coord.lng = calculateLngByDistance(coord, .1, Directions.East).lng;
             break;
         case Directions.NW:
-            coord.lat = addToLat(coord, .1, Directions.North).lat;
-            coord.lng = addToLong(coord, .1, Directions.West).lng;
+            coord.lat = calculateLatByDistance(coord, .1, Directions.North).lat;
+            coord.lng = calculateLngByDistance(coord, .1, Directions.West).lng;
             break;
         case Directions.SE:
-            coord.lat = addToLat(coord, .1, Directions.South).lat;
-            coord.lng = addToLong(coord, .1, Directions.East).lng;
+            coord.lat = calculateLatByDistance(coord, .1, Directions.South).lat;
+            coord.lng = calculateLngByDistance(coord, .1, Directions.East).lng;
             break;
         case Directions.SW:
-            coord.lat = addToLat(coord, .1, Directions.South).lat;
-            coord.lng = addToLong(coord, .1, Directions.West).lng;
+            coord.lat = calculateLatByDistance(coord, .1, Directions.South).lat;
+            coord.lng = calculateLngByDistance(coord, .1, Directions.West).lng;
             break;
     }
 
     return coord;
 }
 
+//TODO: returns immutable object, fix that
+function CloneObject(object) {
+    return Object.create(object);
+    // let clone = {};
+    // clone.prototype = Object.create(Object.getPrototypeOf(object));
+    // console.log(Object.getPrototypeOf(clone));
+    // return Object.assign(clone, object);
+}
+
 module.exports = {
+    Directions: Directions,
     Coord: Coord,
     Grid:Grid,
-    Directions: Directions,
-    NextLat: addToLat,
-    NextLng: addToLong,
-    NextBlock: NextBlock
+    NextLat: calculateLatByDistance,
+    NextLng: calculateLngByDistance,
+    NextBlock: NextBlock,
+    CloneObject: CloneObject
 };
