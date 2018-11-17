@@ -90,9 +90,10 @@ function calculateLatByDistance(coord, miles, direction) {
         return (miles / earthRadius) * radToDeg;
     }
 
-    direction === Directions.North ? coord.lat += nextLat() : coord.lat -= nextLat();
+    let result = new Coord(null, coord.lng);
+    result.lat = direction === Directions.North ? coord.lat + nextLat() : coord.lat - nextLat();
 
-    return coord;
+    return result;
 }
 
 function calculateLngByDistance(coord, miles, direction) {
@@ -114,10 +115,10 @@ function calculateLngByDistance(coord, miles, direction) {
         return (miles / radius) * radToDeg;
     }
 
-    coord = CloneObject(coord);
-    direction === Directions.East ? coord.lng += nextLng() : coord.lng -= nextLng();
-
-    return coord;
+    let result = new Coord(coord.lat);
+    result.lng = direction === Directions.East ? coord.lng + nextLng() : coord.lng - nextLng();
+    // direction === Directions.East ? coord.lng += nextLng() : coord.lng -= nextLng();
+    return result;
 }
 
 function NextBlock(coord, direction) {
@@ -134,26 +135,28 @@ function NextBlock(coord, direction) {
         return
     }
 
+    let result = new Coord();
+
     switch (direction) {
         case Directions.NE:
-            coord.lat = calculateLatByDistance(coord, .1, Directions.North).lat;
-            coord.lng = calculateLngByDistance(coord, .1, Directions.East).lng;
+            result.lat = calculateLatByDistance(coord, .1, Directions.North).lat;
+            result.lng = calculateLngByDistance(coord, .1, Directions.East).lng;
             break;
         case Directions.NW:
-            coord.lat = calculateLatByDistance(coord, .1, Directions.North).lat;
-            coord.lng = calculateLngByDistance(coord, .1, Directions.West).lng;
+            result.lat = calculateLatByDistance(coord, .1, Directions.North).lat;
+            result.lng = calculateLngByDistance(coord, .1, Directions.West).lng;
             break;
         case Directions.SE:
-            coord.lat = calculateLatByDistance(coord, .1, Directions.South).lat;
-            coord.lng = calculateLngByDistance(coord, .1, Directions.East).lng;
+            result.lat = calculateLatByDistance(coord, .1, Directions.South).lat;
+            result.lng = calculateLngByDistance(coord, .1, Directions.East).lng;
             break;
         case Directions.SW:
-            coord.lat = calculateLatByDistance(coord, .1, Directions.South).lat;
-            coord.lng = calculateLngByDistance(coord, .1, Directions.West).lng;
+            result.lat = calculateLatByDistance(coord, .1, Directions.South).lat;
+            result.lng = calculateLngByDistance(coord, .1, Directions.West).lng;
             break;
     }
 
-    return coord;
+    return result;
 }
 
 //TODO: returns immutable object, fix that
