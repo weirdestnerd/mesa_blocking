@@ -12,10 +12,6 @@ let MesaCityGrid = {
 };
 
 function splitSections() {
-    //TODO: calculate .1 mile to the right and down
-    //    TODO: handle overflow to the right or down
-    //    check if next Coords are within the section
-    //    create new grid if right & down are within bound
     (function splitSectionOne() {
         let sectionOne = utils.CloneObject(MesaCity.sections.sectionOne);
     //    bottom left + .1 mile is the boundary
@@ -25,7 +21,7 @@ function splitSections() {
             return bound.lat < coord.lat && bound.lng < coord.lng;
         }
 
-        //    start from top left
+        //    start from top right
         let currentRow = utils.CloneObject(sectionOne.northEast);
 
         while (isBounded(currentRow)) {
@@ -41,34 +37,99 @@ function splitSections() {
             MesaCityGrid.sectionOne.push(rowGrids);
             currentRow = utils.NextLat(currentRow, .1, utils.Directions.South);
         }
-        for (let row of MesaCityGrid.sectionOne) {
-            console.log("new row -------------------------------------");
-            for (let col of row) {
-                console.log("new col");
-                col.log();
-            }
-        }
     }());
 
     (function splitSectionTwo() {
     //    start from top left/right
+        let sectionTwo = utils.CloneObject(MesaCity.sections.sectionTwo);
+        //    bottom left + .1 mile is the boundary
+        let bound = utils.NextBlock(sectionTwo.southWest, utils.Directions.SW);
+
+        function isBounded(coord) {
+            return bound.lat < coord.lat && bound.lng < coord.lng;
+        }
+
+        //    start from top right
+        let currentRow = utils.CloneObject(sectionTwo.northEast);
+
+        while (isBounded(currentRow)) {
+            let currentColumn = utils.NextLng(currentRow, .1, utils.Directions.West);
+            let rowGrids = [];
+            while (isBounded(currentColumn)) {
+                let grid = new Grid();
+                grid.topLeft = utils.CloneObject(currentColumn);
+                grid.create();
+                rowGrids.unshift(grid);
+                currentColumn = utils.NextLng(currentColumn, .1, utils.Directions.West);
+            }
+            MesaCityGrid.sectionTwo.push(rowGrids);
+            currentRow = utils.NextLat(currentRow, .1, utils.Directions.South);
+        }
     }());
 
     (function splitSectionThree() {
     //    start from bottom left
+        let sectionThree = utils.CloneObject(MesaCity.sections.sectionThree);
+        //    top right + .1 mile is the boundary
+        let bound = utils.NextBlock(sectionThree.northEast, utils.Directions.NE);
+
+        function isBounded(coord) {
+            return bound.lat > coord.lat && bound.lng > coord.lng;
+        }
+
+        //    start from bottom left
+        let currentRow = utils.CloneObject(sectionThree.southWest);
+
+        while (isBounded(currentRow)) {
+            let currentColumn = utils.NextLng(currentRow, .1, utils.Directions.East);
+            let rowGrids = [];
+            while (isBounded(currentColumn)) {
+                let grid = new Grid();
+                grid.bottomRight = utils.CloneObject(currentColumn);
+                grid.create();
+                rowGrids.push(grid);
+                currentColumn = utils.NextLng(currentColumn, .1, utils.Directions.East);
+            }
+            MesaCityGrid.sectionThree.push(rowGrids);
+            currentRow = utils.NextLat(currentRow, .1, utils.Directions.North);
+        }
     }());
 
     (function splitSectionFour() {
     //  start from top left
+        let sectionFour = utils.CloneObject(MesaCity.sections.sectionFour);
+        //    bottom left + .1 mile is the boundary
+        let bound = utils.NextBlock(sectionFour.southEast, utils.Directions.SE);
+
+        function isBounded(coord) {
+            return bound.lat < coord.lat && bound.lng < coord.lng;
+        }
+
+        //    start from top left
+        let currentRow = utils.CloneObject(sectionFour.northWest);
+
+        while (isBounded(currentRow)) {
+            let currentColumn = utils.NextLng(currentRow, .1, utils.Directions.East);
+            let rowGrids = [];
+            while (isBounded(currentColumn)) {
+                let grid = new Grid();
+                grid.topRight = utils.CloneObject(currentColumn);
+                grid.create();
+                rowGrids.push(grid);
+                currentColumn = utils.NextLng(currentColumn, .1, utils.Directions.East);
+            }
+            MesaCityGrid.sectionFour.push(rowGrids);
+            currentRow = utils.NextLat(currentRow, .1, utils.Directions.South);
+        }
     }());
 
 }
 
-const main = () => {
+
 // split city into square sections
 //    split each section into grid
-    splitSections();
+splitSections();
 //    return grid
-    return MesaCityGrid;
+module.exports = {
+    MesaCityGrid: MesaCityGrid
 };
-main();
