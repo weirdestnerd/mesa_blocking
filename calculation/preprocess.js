@@ -102,7 +102,7 @@ function splitSections() {
         let bound = utils.NextBlock(sectionFour.southEast, utils.Directions.SE);
 
         function isBounded(coord) {
-            return bound.lat < coord.lat && bound.lng < coord.lng;
+            return bound.lat < coord.lat && bound.lng > coord.lng;
         }
 
         //    start from top left
