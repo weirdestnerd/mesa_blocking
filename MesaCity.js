@@ -36,9 +36,9 @@ function MesaCity() {
 
     let sectionThree = new CitySection("sectionThree");
     sectionThree.northEast = new Coord(33.516079, -111.632890);
-    sectionThree.northWest = new Coord(33.516079, -111.840738);
-    sectionThree.southWest = new Coord(33.468072, -111.840738);
-    sectionThree.southEast = new Coord(33.468072, -111.632890);
+    sectionThree.northWest = new Coord(33.516079, -111.841803);
+    sectionThree.southWest = new Coord(33.455611, -111.841803);
+    sectionThree.southEast = new Coord(33.455611, -111.632890);
 
     let sectionFour = new CitySection("sectionFour");
     sectionFour.northEast = new Coord(33.455611, -111.584269);

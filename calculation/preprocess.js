@@ -25,17 +25,17 @@ function splitSections() {
         let currentRow = utils.CloneObject(sectionOne.northEast);
 
         while (isBounded(currentRow)) {
-            let currentColumn = utils.NextLng(currentRow, .1, utils.Directions.West);
+            let currentColumn = utils.NextLng(currentRow, utils.Directions.West);
             let rowGrids = [];
             while (isBounded(currentColumn)) {
                 let grid = new Grid();
                 grid.topLeft = utils.CloneObject(currentColumn);
                 grid.create();
                 rowGrids.unshift(grid);
-                currentColumn = utils.NextLng(currentColumn, .1, utils.Directions.West);
+                currentColumn = utils.NextLng(currentColumn, utils.Directions.West);
             }
             MesaCityGrid.sectionOne.push(rowGrids);
-            currentRow = utils.NextLat(currentRow, .1, utils.Directions.South);
+            currentRow = utils.NextLat(currentRow, utils.Directions.South);
         }
     }());
 
@@ -53,17 +53,17 @@ function splitSections() {
         let currentRow = utils.CloneObject(sectionTwo.northEast);
 
         while (isBounded(currentRow)) {
-            let currentColumn = utils.NextLng(currentRow, .1, utils.Directions.West);
+            let currentColumn = utils.NextLng(currentRow, utils.Directions.West);
             let rowGrids = [];
             while (isBounded(currentColumn)) {
                 let grid = new Grid();
                 grid.topLeft = utils.CloneObject(currentColumn);
                 grid.create();
                 rowGrids.unshift(grid);
-                currentColumn = utils.NextLng(currentColumn, .1, utils.Directions.West);
+                currentColumn = utils.NextLng(currentColumn, utils.Directions.West);
             }
             MesaCityGrid.sectionTwo.push(rowGrids);
-            currentRow = utils.NextLat(currentRow, .1, utils.Directions.South);
+            currentRow = utils.NextLat(currentRow, utils.Directions.South);
         }
     }());
 
@@ -81,17 +81,17 @@ function splitSections() {
         let currentRow = utils.CloneObject(sectionThree.southWest);
 
         while (isBounded(currentRow)) {
-            let currentColumn = utils.NextLng(currentRow, .1, utils.Directions.East);
+            let currentColumn = utils.NextLng(currentRow, utils.Directions.East);
             let rowGrids = [];
             while (isBounded(currentColumn)) {
                 let grid = new Grid();
                 grid.bottomRight = utils.CloneObject(currentColumn);
                 grid.create();
                 rowGrids.push(grid);
-                currentColumn = utils.NextLng(currentColumn, .1, utils.Directions.East);
+                currentColumn = utils.NextLng(currentColumn, utils.Directions.East);
             }
             MesaCityGrid.sectionThree.push(rowGrids);
-            currentRow = utils.NextLat(currentRow, .1, utils.Directions.North);
+            currentRow = utils.NextLat(currentRow, utils.Directions.North);
         }
     }());
 
@@ -109,17 +109,17 @@ function splitSections() {
         let currentRow = utils.CloneObject(sectionFour.northWest);
 
         while (isBounded(currentRow)) {
-            let currentColumn = utils.NextLng(currentRow, .1, utils.Directions.East);
+            let currentColumn = utils.NextLng(currentRow, utils.Directions.East);
             let rowGrids = [];
             while (isBounded(currentColumn)) {
                 let grid = new Grid();
                 grid.topRight = utils.CloneObject(currentColumn);
                 grid.create();
                 rowGrids.push(grid);
-                currentColumn = utils.NextLng(currentColumn, .1, utils.Directions.East);
+                currentColumn = utils.NextLng(currentColumn, utils.Directions.East);
             }
             MesaCityGrid.sectionFour.push(rowGrids);
-            currentRow = utils.NextLat(currentRow, .1, utils.Directions.South);
+            currentRow = utils.NextLat(currentRow, utils.Directions.South);
         }
     }());
 

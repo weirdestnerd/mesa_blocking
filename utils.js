@@ -1,5 +1,6 @@
 const Enum = require('enum');
 
+const CityBlockSize = .1;
 const earthRadius = 3960.0;
 const degToRad = Math.PI / 180.0;
 const radToDeg = 180.0 / Math.PI;
@@ -30,23 +31,23 @@ function Grid() {
         }
     //    if topRight, then calculate topLeft & bottomRight
         if (!this.topRight.isNull()) {
-            this.topLeft = calculateLngByDistance(this.topRight, .1, Directions.West);
-            this.bottomRight = calculateLatByDistance(this.topRight, .1, Directions.South);
+            this.topLeft = calculateLngByDistance(this.topRight, Directions.West);
+            this.bottomRight = calculateLatByDistance(this.topRight, Directions.South);
         }
     //    if topLeft, then calculate topRight & bottomLeft
         if (!this.topLeft.isNull()) {
-            this.topRight = calculateLngByDistance(this.topLeft, .1, Directions.East);
-            this.bottomLeft = calculateLatByDistance(this.topLeft, .1, Directions.South);
+            this.topRight = calculateLngByDistance(this.topLeft, Directions.East);
+            this.bottomLeft = calculateLatByDistance(this.topLeft, Directions.South);
         }
     //    if bottomRight, then calculate bottomLeft & topRight
         if (!this.bottomRight.isNull()) {
-            this.bottomLeft = calculateLngByDistance(this.bottomRight, .1, Directions.West);
-            this.topRight = calculateLatByDistance(this.bottomRight, .1, Directions.North);
+            this.bottomLeft = calculateLngByDistance(this.bottomRight, Directions.West);
+            this.topRight = calculateLatByDistance(this.bottomRight, Directions.North);
         }
     //    if bottomLeft, then calculate bottomRight & topLeft
         if (!this.bottomLeft.isNull()) {
-            this.bottomRight = calculateLngByDistance(this.bottomLeft, .1, Directions.East);
-            this.topLeft = calculateLatByDistance(this.bottomLeft, .1, Directions.North);
+            this.bottomRight = calculateLngByDistance(this.bottomLeft, Directions.East);
+            this.topLeft = calculateLatByDistance(this.bottomLeft, Directions.North);
         }
     };
 
@@ -87,22 +88,22 @@ function Grid() {
     };
 }
 
-function calculateLatByDistance(coord, miles, direction) {
+function calculateLatByDistance(coord, direction) {
     if (!(coord instanceof Coord)) {
         console.error("calculateLatByDistance: Type of coord must be utils/Coord");
         return
     }
     if (!Directions.isDefined(direction)) {
-        console.error("Type of direction must be utils/Direction");
+        console.error("calculateLatByDistance: Type of direction must be utils/Direction");
         return
     }
     if (direction !== Directions.North && direction !== Directions.South) {
-        console.error("Direction must be North or South");
+        console.error("calculateLatByDistance: Direction must be North or South");
         return
     }
 
     function nextLat() {
-        return (miles / earthRadius) * radToDeg;
+        return (CityBlockSize / earthRadius) * radToDeg;
     }
 
     let result = new Coord(null, coord.lng);
@@ -111,23 +112,23 @@ function calculateLatByDistance(coord, miles, direction) {
     return result;
 }
 
-function calculateLngByDistance(coord, miles, direction) {
+function calculateLngByDistance(coord, direction) {
     if (!(coord instanceof Coord)) {
         console.error("calculateLngByDistance: Type of coord must be utils/Coord");
         return
     }
     if (!Directions.isDefined(direction)) {
-        console.error("Type of direction must be utils/Direction");
+        console.error("calculateLngByDistance: Type of direction must be utils/Direction");
         return
     }
     if (direction !== Directions.West && direction !== Directions.East) {
-        console.error("Direction must be North or South");
+        console.error("calculateLngByDistance: Direction must be North or South");
         return
     }
 
     function nextLng() {
         radius = earthRadius * Math.cos(coord.lat * degToRad);
-        return (miles / radius) * radToDeg;
+        return (CityBlockSize / radius) * radToDeg;
     }
 
     let result = new Coord(coord.lat);
@@ -142,11 +143,11 @@ function NextBlock(coord, direction) {
         return
     }
     if (!Directions.isDefined(direction)) {
-        console.error("Type of direction must be utils/Direction");
+        console.error("NextBlock: Type of direction must be utils/Direction");
         return
     }
     if (direction !== Directions.NE && direction !== Directions.NW && direction !== Directions.SE && direction !== Directions.SW) {
-        console.error("Direction must be NE or NW or SE or SW");
+        console.error("NextBlock: Direction must be NE or NW or SE or SW");
         return
     }
 
@@ -154,20 +155,20 @@ function NextBlock(coord, direction) {
 
     switch (direction) {
         case Directions.NE:
-            result.lat = calculateLatByDistance(coord, .1, Directions.North).lat;
-            result.lng = calculateLngByDistance(coord, .1, Directions.East).lng;
+            result.lat = calculateLatByDistance(coord, Directions.North).lat;
+            result.lng = calculateLngByDistance(coord, Directions.East).lng;
             break;
         case Directions.NW:
-            result.lat = calculateLatByDistance(coord, .1, Directions.North).lat;
-            result.lng = calculateLngByDistance(coord, .1, Directions.West).lng;
+            result.lat = calculateLatByDistance(coord, Directions.North).lat;
+            result.lng = calculateLngByDistance(coord, Directions.West).lng;
             break;
         case Directions.SE:
-            result.lat = calculateLatByDistance(coord, .1, Directions.South).lat;
-            result.lng = calculateLngByDistance(coord, .1, Directions.East).lng;
+            result.lat = calculateLatByDistance(coord, Directions.South).lat;
+            result.lng = calculateLngByDistance(coord, Directions.East).lng;
             break;
         case Directions.SW:
-            result.lat = calculateLatByDistance(coord, .1, Directions.South).lat;
-            result.lng = calculateLngByDistance(coord, .1, Directions.West).lng;
+            result.lat = calculateLatByDistance(coord, Directions.South).lat;
+            result.lng = calculateLngByDistance(coord, Directions.West).lng;
             break;
     }
 
