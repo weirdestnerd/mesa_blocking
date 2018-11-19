@@ -129,7 +129,30 @@ function splitSections() {
 // split city into square sections
 //    split each section into grid
 splitSections();
+
+console.log(MesaCityGrid.sectionOne.length);
+console.log(MesaCityGrid.sectionTwo.length);
+console.log(MesaCityGrid.sectionThree.length);
+console.log(MesaCityGrid.sectionFour.length);
+
+function gridAsBlockArray() {
+    // MesaCityGrid is empty
+    if (Object.values(MesaCityGrid).every(section => {return section.length === 0}))
+        splitSections();
+
+    let result = [];
+    for (let section of Object.values(MesaCityGrid)) {
+        for (let row of section) {
+            for (let grid of row) {
+                result.push(grid.toBlockArray());
+            }
+        }
+    }
+    return result;
+}
+
 //    return grid
 module.exports = {
-    MesaCityGrid: MesaCityGrid
+    MesaCityGrid: MesaCityGrid,
+    MesaCityGridAsBlockArray: gridAsBlockArray()
 };

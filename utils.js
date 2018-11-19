@@ -60,6 +60,21 @@ function Grid() {
         return allCorners.every(isCornerNull);
     };
 
+    this.toArray = () => {
+        let result = [];
+        result.push([this.topLeft.lat, this.topLeft.lng]);
+        result.push([this.topRight.lat, this.topRight.lng]);
+        result.push([this.bottomRight.lat, this.bottomRight.lng]);
+        result.push([this.bottomLeft.lat, this.bottomLeft.lng]);
+        return result;
+    };
+
+    this.toBlockArray = () => {
+        let result = this.toArray();
+        result.push([this.topLeft.lat, this.topLeft.lng]);
+        return result;
+    };
+
     this.log = () => {
         console.log("TopLeft: ");
         this.topLeft.log();
