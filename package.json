@@ -7,6 +7,7 @@
   },
   "dependencies": {
     "cookie-parser": "~1.4.3",
+    "csv-parser": "^2.1.0",
     "debug": "~2.6.9",
     "enum": "^2.5.0",
     "express": "~4.16.0",
@@ -14,6 +15,7 @@
     "mapbox-gl": "^0.51.0",
     "morgan": "~1.9.0",
     "pug": "2.0.0-beta11",
+    "read-excel-file": "^2.0.6",
     "socket.io": "^2.1.1"
   }
 }

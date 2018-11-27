@@ -1,4 +1,4 @@
-const GridBlock = require('./calculation/preprocess').MesaCityGridAsBlockArray;
+const GridBlock = require('./processing/preprocess').MesaCityGridAsBlockArray;
 
 let connection = io => {
     io.on('connection', socket => {
@@ -12,6 +12,10 @@ let getGrid = io => {
             fn(GridBlock);
         })
     })
+};
+
+let getData = io => {
+//    TODO: return data points to plot on the map
 };
 
 module.exports = (http) => {
