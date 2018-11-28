@@ -17,9 +17,18 @@ let getGrid = io => {
 
 let getData = io => {
     io.on('connection', socket => {
-        socket.on('get data', fn => {
+        socket.on('get all customers', fn => {
             //TODO: change file path and schema
             data.getFromFile('./data/test.csv', ['latitude', 'longitude'])
+                .then(fn)
+                .catch(error => {
+                    console.error(error);
+                    fn(null);
+                })
+        });
+        socket.on('get active customers', fn => {
+            //TODO: change file path and schema
+            data.getFromFile('./data/test1.csv', ['latitude', 'longitude'])
                 .then(fn)
                 .catch(error => {
                     console.error(error);
