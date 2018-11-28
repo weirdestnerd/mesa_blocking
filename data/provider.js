@@ -6,80 +6,102 @@ const fs = require('fs');
 const csv = require('csv-parser');
 
 function getExcelData(path, schema) {
-    let excelSchema = {};
+    return new Promise((resolve, reject) => {
+        let excelSchema = {};
 
-    (function processSchema() {
+        (function processSchema() {
+            let transformedSchema = schema.map(property => {
+                return property.trim().toUpperCase().replace(' ', '_');
+            });
+            for (let property of transformedSchema) {
+                if (customerSchema.hasOwnProperty(property)) {
+                    excelSchema[property] = utils.CloneObject(customerSchema[property]);
+                }
+                else {
+                    console.warn(`Property "${property}" is not valid.`);
+                }
+            }
+        }());
+
+        if (!excelSchema) {
+            reject('Invalid schema format provided');
+        }
+        readXlsxFile(fs.createReadStream(path), {schema: excelSchema}).then(({rows, errors}) => {
+            if (errors.length !== 0) {
+                reject(`Error reading excel file "${path}" at ${errors[0]}`);
+            }
+            resolve(rows);
+        })
+    });
+}
+
+function getCSVData(path, schema) {
+    return new Promise(resolve => {
+        let data = [];
         let transformedSchema = schema.map(property => {
             return property.trim().toUpperCase().replace(' ', '_');
         });
-        for (let property of transformedSchema) {
-            if (customerSchema.hasOwnProperty(property)) {
-                excelSchema[property] = utils.CloneObject(customerSchema[property]);
+        fs.createReadStream(path)
+            .pipe(csv())
+            .on('data', row => {
+                let requested = {};
+                for (let property of transformedSchema) {
+                    if (row.hasOwnProperty(property)) {
+                        requested[property] = row[property];
+                    } else {
+                        console.warn(`Property "${property}" is not valid.`);
+                    }
+                }
+                data.push(requested);
+            })
+            .on('end', () => {
+                resolve(data);
+            });
+    });
+}
+
+function readFile(path, schema) {
+    return new Promise((resolve, reject) => {
+        let type;
+        function extractExtension() {
+            let regex = /(.csv)|(.xlsx)$/g;
+            let foundExtension = path.match(regex);
+            if (foundExtension === null) {
+                reject('File extension is expected in file path. if present, check for correctness.');
             }
-            else {
-                console.warn(`Property ${property} is not valid.`);
+            type = foundExtension[0];
+            if (!['.csv', '.xlsx'].includes(type)) {
+                reject('Provided type is not supported.');
             }
         }
-    }());
-
-    if (!excelSchema) {
-        console.error('Invalid schema format provided');
-        return;
-    }
-
-    readXlsxFile(fs.createReadStream(path), {schema: excelSchema}).then(({rows, errors}) => {
-    //    TODO:
-        console.log(rows[0]);
-    })
-}
-
-async function getCSVData(path, schema) {
-    let data = [];
-    let transformedSchema = schema.map(property => {
-        return property.trim().toUpperCase().replace(' ', '_');
-    });
-    //TODO: return data from stream // or return promise
-    await fs.createReadStream(path)
-        .pipe(csv())
-        .on('data', row => {
-            let requested = {};
-            for (let property of transformedSchema) {
-                requested[property] = row[property];
+        (function validatePath() {
+            if (!path) {
+                reject('Path is not provided.');
             }
-            data.push(requested);
-        })
-        .on('end', () => {
-            console.log(`This is data: ${data}`);
-            return data;
-        });
-    console.log(`afterwards ${data}`);
-    return data;
+            extractExtension();
+            let directory = path.replace(type, '');
+            let regex = /([a-zA-Z0-9\s_\\.\-\(\):])+/g;
+            if (!regex.test(directory)) {
+                reject('File name is empty');
+            }
+        }());
+        switch (type) {
+            case '.xlsx':
+                getExcelData(path, schema).then(resolve).catch(reject);
+                break;
+            case '.csv':
+                getCSVData(path, schema).then(resolve).catch(reject);
+                break;
+        }
+    });
 }
 
-async function get(type, path, schema) {
-    type = type.toLowerCase().trim();
-    if (!['csv', 'excel', 'sql'].includes(type)) {
-        console.error('Provided type is not supported.');
-        return;
-    }
-    if (!path) {
-        console.error('Path is not provided.');
-        return;
-    }
-    switch (type) {
-        case 'excel':
-            return getExcelData(path, schema);
-        case 'csv':
-            return await getCSVData(path, schema);
-        case 'sql':
-            break;
-    }
-}
-
+function readDatabase() {}
 
 module.exports = {
-    get: get
+    getFromFile: readFile,
+    getFromDatabase: readDatabase,
 };
 
-let d = get('csv', './test.csv', ['latitude', 'longitude']);
-console.log(d.then(console.log));
+// readFile('./test.csv', ['latitude', 'longitude']).then(console.log).catch(console.log);
+// readFile('./test.xlsx', ['latitude', 'longitude']).then(console.log).catch(console.log);
