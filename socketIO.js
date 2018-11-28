@@ -1,4 +1,5 @@
 const GridBlock = require('./processing/preprocess').MesaCityGridAsBlockArray;
+const data = require('./data/provider');
 
 let connection = io => {
     io.on('connection', socket => {
@@ -15,11 +16,22 @@ let getGrid = io => {
 };
 
 let getData = io => {
-//    TODO: return data points to plot on the map
+    io.on('connection', socket => {
+        socket.on('get data', fn => {
+            //TODO: change file path and schema
+            data.getFromFile('./data/test.csv', ['latitude', 'longitude'])
+                .then(fn)
+                .catch(error => {
+                    console.error(error);
+                    fn(null);
+                })
+        })
+    })
 };
 
 module.exports = (http) => {
     let io = require('socket.io')(http);
     connection(io);
     getGrid(io);
+    getData(io);
 };

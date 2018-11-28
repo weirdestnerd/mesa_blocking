@@ -7,5 +7,11 @@ socket.emit('get grid', (grids) => {
 });
 
 socket.emit('get data', (data) => {
-//    TODO: plot data on map
+    if (!data) {
+        alert("Internal Error: check console log");
+        return;
+    }
+    for (customer of data) {
+        L.marker([customer.LATITUDE, customer.LONGITUDE]).addTo(mymap);
+    }
 });
