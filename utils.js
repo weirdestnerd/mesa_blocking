@@ -1,6 +1,6 @@
 const Enum = require('enum');
 
-const CityBlockSize = .1;
+const CityBlockSize = .05;
 const earthRadius = 3960.0;
 const degToRad = Math.PI / 180.0;
 const radToDeg = 180.0 / Math.PI;
