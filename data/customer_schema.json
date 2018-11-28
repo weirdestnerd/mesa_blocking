@@ -1,71 +1,71 @@
 {
   "UNIQUEID": {
-    "prop": "ID",
+    "prop": "UNIQUEID",
     "type": "Number",
     "required": "true"
   },
   "NUMBER_OF_BARRELS": {
-    "prop": "barrels",
+    "prop": "NUMBER_OF_BARRELS",
     "type": "Number"
   },
   "FULL_ADDRESS": {
-    "prop": "address",
+    "prop": "FULL_ADDRESS",
     "type": "String"
   },
   "CITY": {
-    "prop": "city",
+    "prop": "CITY",
     "type": "String"
   },
   "STREET_NUMBER": {
-    "prop": "street_number",
+    "prop": "STREET_NUMBER",
     "type": "Number"
   },
   "STREET_DIRECTION": {
-    "prop": "street_direction",
+    "prop": "STREET_DIRECTION",
     "type": "String"
   },
   "STREET_NAME": {
-    "prop": "street_name",
+    "prop": "STREET_NAME",
     "type": "String"
   },
   "STREET_TYPE": {
-    "prop": "street_type",
+    "prop": "STREET_TYPE",
     "type": "String"
   },
   "STREET_POST_DIRECTION": {
-    "prop": "street_post_direction",
+    "prop": "STREET_POST_DIRECTION",
     "type": "String"
   },
   "UNIT_TYPE": {
-    "prop": "unit_type",
+    "prop": "UNIT_TYPE",
     "type": "String"
   },
   "UNIT_BUILDING_NUMBER": {
-    "prop": "unit_building_number",
+    "prop": "UNIT_BUILDING_NUMBER",
     "type": "Number"
   },
   "LATITUDE": {
-    "prop": "lat",
+    "prop": "LATITUDE",
     "type": "Number"
   },
   "LONGITUDE": {
-    "prop": "long",
+    "prop": "LONGITUDE",
     "type": "Number"
   },
   "X_COORDINATE": {
-    "prop": "x_coordinate",
+    "prop": "X_COORDINATE",
     "type": "Number"
   },
   "Y_COORDINATE": {
-    "prop": "y_coordinate",
+    "prop": "Y_COORDINATE",
     "type": "Number"
   },
   "DAY": {
-    "prop": "day",
+    "prop": "DAY",
     "type": "String"
   },
   "ROUTE": {
-    "prop": "route",
+    "prop": "ROUTE",
     "type": "String"
   }
 }
