@@ -3,15 +3,41 @@ block links
     link(rel="stylesheet" href="https://unpkg.com/leaflet@1.3.4/dist/leaflet.css"
     integrity="sha512-puBpdR0798OZvTTbP4A8Ix/l+A4dHDD0DGqYW6RQ+9jxkRFclaxxQb/SJAWZfWAkuyeQUytO7+7N4QKrDh+drA=="
     crossorigin="")
+    link(rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous")
+
+mixin week_dropdown(weeks)
+    div.dropdown
+        button#week_selection.btn.btn-secondary.dropdown-toggle(type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false") Select week
+        div.dropdown-menu(aria-labelledby="week_selection")
+            each file_name, index in weeks
+                if index === 1
+                    a.dropdown-item.active(href="javascript:void(0)" value=file_name)=file_name
+                else
+                    a.dropdown-item(href="javascript:void(0)" value=file_name)=file_name
 
 block content
-    h1=title
-    div#mapid
+    div#view.row
+        div#map.col-md-9
+            h1=title
+            p#console
+            div#mapid
+        div#control.col
+            +week_dropdown(files)
+
 
 block scripts
-    script(src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.1.1/socket.io.js")
-    script(src="https://unpkg.com/leaflet@1.3.4/dist/leaflet.js"
-    integrity="sha512-nMMmRyTVoLYqjP9hrbed9S+FzjZHW5gY1TWCHA5ckwXZBadntCNs8kEqAWdrb9O7rxbCaA4lKTIWjDXZxflOcA=="
-    crossorigin="")
+    include dependency_scripts
+    script.
+        const mapconsole = message => {
+            if (typeof message !== 'string') {
+                console.error('map console message must be string');
+                // noinspection JSAnnotator
+                return;
+            }
+            document.querySelector('p#console').innerHTML = message;
+            console.log(message);
+        }
+    script(src='/javascripts/utils.js')
     script(src='/javascripts/leaflet.js')
     script(src='/javascripts/clientSocketIO.js')
+    script(src='/javascripts/interaction.js')

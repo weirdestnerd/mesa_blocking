@@ -9,7 +9,7 @@ let connection = io => {
 
 let getGrid = io => {
     io.on('connection', socket => {
-        socket.on('get grid', fn => {
+        socket.on('get grids', fn => {
             fn(GridBlock);
         })
     })
@@ -35,6 +35,7 @@ let getData = io => {
                     fn(null);
                 })
         })
+    //    TODO: socket.emit('get week')
     })
 };
 

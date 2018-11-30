@@ -2,6 +2,9 @@ let socket = io();
 let allCustomers;
 let activeCustomers;
 let overlapMaps = {};
+let mapGrids;
+// {week_name: "", geojson: ""}
+let recentlyLoadedWeeks = [];
 
 let customerIcon = L.icon({
     iconUrl: 'images/baseline_place_black_18dp.png',
@@ -9,10 +12,13 @@ let customerIcon = L.icon({
     iconAnchor: [18,41]
 });
 
-socket.emit('get grid', (grids) => {
-    var polyline = L.polyline(grids, {color: 'red'}).addTo(mymap);
-    mymap.fitBounds(polyline.getBounds());
-});
+let getGrids = () => {
+    if (mapGrids) return mapGrids;
+    socket.emit('get grids', (grids) => {
+        mapGrids = grids;
+        return mapGrids
+    });
+};
 
 let getCustomers = new Promise(resolve => {
     if (allCustomers) resolve(allCustomers);
@@ -30,6 +36,18 @@ let getCustomers = new Promise(resolve => {
     });
 });
 
+//TODO: get for specified week
+let getCustomersForSelectedWeek = new Promise(resolve => {
+    let selectedWeek = getSelectedWeek();
+    if (isRecentlyLoaded(selectedWeek)) resolve(getWeekFromRecentlyLoaded(selectedWeek));
+    socket.emit('load week', selectedWeek, (data) => {
+        //TODO: convert data to geojson
+        addToRecentlyLoaded(data);
+        resolve(data);
+    })
+});
+
+//TODO: discard when above is done
 let getActiveCustomers = new Promise(resolve => {
     if (activeCustomers) resolve(activeCustomers);
     socket.emit('get active customers', (data) => {
@@ -45,8 +63,7 @@ let getActiveCustomers = new Promise(resolve => {
     });
 });
 
-Promise.all([getCustomers, getActiveCustomers]).then(values => {
-    overlapMaps['customers'] = values[0];
-    overlapMaps['active'] = values[1];
+getCustomers.then(customers => {
+    overlapMaps['customers'] = customers;
     L.control.layers(null, overlapMaps).addTo(mymap);
 });
