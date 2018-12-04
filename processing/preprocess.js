@@ -3,6 +3,7 @@ const MesaCity = require('../MesaCity');
 const utils = require('../utils');
 const Grid = utils.Grid;
 const Coord = utils.Coord;
+const Region = utils.Region;
 
 let MesaCityGrid = {
     sectionOne: [],
@@ -11,7 +12,35 @@ let MesaCityGrid = {
     sectionFour: [],
 };
 
-function splitSections() {
+let MesaCityGridAsBlockArray = [];
+let MesaCityGridAsJSON = {
+    sectionOne: {
+        rows: [],
+        members: 0,
+        active: 0,
+        gridCount: 0
+    },
+    sectionTwo: {
+        rows: [],
+        members: 0,
+        active: 0,
+        gridCount: 0
+    },
+    sectionThree: {
+        rows: [],
+        members: 0,
+        active: 0,
+        gridCount: 0
+    },
+    sectionFour: {
+        rows: [],
+        members: 0,
+        active: 0,
+        gridCount: 0
+    },
+};
+
+(function splitSections() {
     (function splitSectionOne() {
         let sectionOne = utils.CloneObject(MesaCity.sections.sectionOne);
     //    bottom left + .1 mile is the boundary
@@ -20,6 +49,8 @@ function splitSections() {
         function isBounded(coord) {
             return bound.lat < coord.lat && bound.lng < coord.lng;
         }
+
+        MesaCityGridAsJSON.sectionOne["bounds"] = [sectionOne.southWest, sectionOne.northEast];
 
         //    start from top right
         let currentRow = utils.CloneObject(sectionOne.northEast);
@@ -32,9 +63,18 @@ function splitSections() {
                 grid.topLeft = utils.CloneObject(currentColumn);
                 grid.create();
                 rowGrids.unshift(grid);
+                MesaCityGridAsBlockArray.push(grid.toBlockArray());
                 currentColumn = utils.NextLng(currentColumn, utils.Directions.West);
             }
+            //  top-right of row
+            let rowDiagonalBoundaries = [currentRow, new Coord(currentRow.lat, sectionOne.southWest.lng)];
+
             MesaCityGrid.sectionOne.push(rowGrids);
+            MesaCityGridAsJSON.sectionOne.rows.push({
+                "bounds": rowDiagonalBoundaries,
+                "grids": rowGrids
+            });
+            MesaCityGridAsJSON.sectionOne.gridCount += rowGrids.length;
             currentRow = utils.NextLat(currentRow, utils.Directions.South);
         }
     }());
@@ -49,6 +89,8 @@ function splitSections() {
             return bound.lat < coord.lat && bound.lng < coord.lng;
         }
 
+        MesaCityGridAsJSON.sectionTwo["bounds"] = [sectionTwo.southWest, sectionTwo.northEast];
+
         //    start from top right
         let currentRow = utils.CloneObject(sectionTwo.northEast);
 
@@ -60,9 +102,18 @@ function splitSections() {
                 grid.topLeft = utils.CloneObject(currentColumn);
                 grid.create();
                 rowGrids.unshift(grid);
+                MesaCityGridAsBlockArray.push(grid.toBlockArray());
                 currentColumn = utils.NextLng(currentColumn, utils.Directions.West);
             }
+
+            let rowDiagonalBoundaries = [currentRow, new Coord(currentRow.lat, sectionTwo.southWest.lng)];
+
             MesaCityGrid.sectionTwo.push(rowGrids);
+            MesaCityGridAsJSON.sectionTwo.rows.push({
+                "bounds": rowDiagonalBoundaries,
+                "grids": rowGrids
+            });
+            MesaCityGridAsJSON.sectionTwo.gridCount += rowGrids.length;
             currentRow = utils.NextLat(currentRow, utils.Directions.South);
         }
     }());
@@ -77,6 +128,7 @@ function splitSections() {
             return bound.lat > coord.lat && bound.lng > coord.lng;
         }
 
+        MesaCityGridAsJSON.sectionThree["bounds"] = [sectionThree.northEast, sectionThree.southWest];
         //    start from bottom left
         let currentRow = utils.CloneObject(sectionThree.southWest);
 
@@ -88,9 +140,18 @@ function splitSections() {
                 grid.bottomRight = utils.CloneObject(currentColumn);
                 grid.create();
                 rowGrids.push(grid);
+                MesaCityGridAsBlockArray.push(grid.toBlockArray());
                 currentColumn = utils.NextLng(currentColumn, utils.Directions.East);
             }
+
+            let rowDiagonalBoundaries = [currentRow, new Coord(currentRow.lat, sectionThree.northEast.lng)];
+
             MesaCityGrid.sectionThree.push(rowGrids);
+            MesaCityGridAsJSON.sectionThree.rows.push({
+                "bounds": rowDiagonalBoundaries,
+                "grids": rowGrids
+            });
+            MesaCityGridAsJSON.sectionThree.gridCount += rowGrids.length;
             currentRow = utils.NextLat(currentRow, utils.Directions.North);
         }
     }());
@@ -105,6 +166,8 @@ function splitSections() {
             return bound.lat < coord.lat && bound.lng > coord.lng;
         }
 
+        MesaCityGridAsJSON.sectionFour["bounds"] = [sectionFour.northWest, sectionFour.southEast];
+
         //    start from top left
         let currentRow = utils.CloneObject(sectionFour.northWest);
 
@@ -116,38 +179,33 @@ function splitSections() {
                 grid.topRight = utils.CloneObject(currentColumn);
                 grid.create();
                 rowGrids.push(grid);
+                MesaCityGridAsBlockArray.push(grid.toBlockArray());
                 currentColumn = utils.NextLng(currentColumn, utils.Directions.East);
             }
+
+            let rowDiagonalBoundaries = [currentRow, new Coord(currentRow.lat, sectionFour.southEast.lng)];
+
             MesaCityGrid.sectionFour.push(rowGrids);
+            MesaCityGridAsJSON.sectionFour.rows.push({
+                "bounds": rowDiagonalBoundaries,
+                "grids": rowGrids
+            });
+            MesaCityGridAsJSON.sectionFour.gridCount += rowGrids.length;
             currentRow = utils.NextLat(currentRow, utils.Directions.South);
         }
     }());
 
-}
+}());
 
-
-// split city into square sections
-//    split each section into grid
-splitSections();
-
-function gridAsBlockArray() {
-    // MesaCityGrid is empty
-    if (Object.values(MesaCityGrid).every(section => {return section.length === 0}))
-        splitSections();
-
-    let result = [];
-    for (let section of Object.values(MesaCityGrid)) {
-        for (let row of section) {
-            for (let grid of row) {
-                result.push(grid.toBlockArray());
-            }
-        }
+(function calculateRegions() {
+    for (let section of MesaCity.sections){
+    //  TODO: find mid lat lng along all edges of each section and create region
     }
-    return result;
-}
+}());
 
 //    return grid
 module.exports = {
     MesaCityGrid: MesaCityGrid,
-    MesaCityGridAsBlockArray: gridAsBlockArray()
+    MesaCityGridAsBlockArray: MesaCityGridAsBlockArray,
+    MesaCityAsJSON: MesaCityGridAsJSON
 };
