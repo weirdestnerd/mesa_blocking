@@ -37,15 +37,15 @@ let getCustomers = new Promise(resolve => {
 });
 
 //TODO: get for specified week
-let getCustomersForSelectedWeek = new Promise(resolve => {
-    let selectedWeek = getSelectedWeek();
-    if (isRecentlyLoaded(selectedWeek)) resolve(getWeekFromRecentlyLoaded(selectedWeek));
-    socket.emit('load week', selectedWeek, (data) => {
-        //TODO: convert data to geojson
-        addToRecentlyLoaded(data);
-        resolve(data);
-    })
-});
+// let getCustomersForSelectedWeek = new Promise(resolve => {
+//     let selectedWeek = getSelectedWeek();
+//     if (isRecentlyLoaded(selectedWeek)) resolve(getWeekFromRecentlyLoaded(selectedWeek));
+//     socket.emit('load week', selectedWeek, (data) => {
+//         //TODO: convert data to geojson
+//         addToRecentlyLoaded(data);
+//         resolve(data);
+//     })
+// });
 
 //TODO: discard when above is done
 let getActiveCustomers = new Promise(resolve => {

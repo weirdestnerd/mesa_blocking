@@ -1,5 +1,5 @@
 const GridBlock = require('./processing/preprocess').MesaCityGridAsBlockArray;
-const data = require('./data/provider');
+const dataProvider = require('./data/provider');
 
 let connection = io => {
     io.on('connection', socket => {
@@ -19,7 +19,7 @@ let getData = io => {
     io.on('connection', socket => {
         socket.on('get all customers', fn => {
             //TODO: change file path and schema
-            data.getFromFile('./data/test.csv', ['latitude', 'longitude'])
+            dataProvider.getFromFile('./data/test.csv', ['latitude', 'longitude'])
                 .then(fn)
                 .catch(error => {
                     console.error(error);
@@ -28,14 +28,14 @@ let getData = io => {
         });
         socket.on('get active customers', fn => {
             //TODO: change file path and schema
-            data.getFromFile('./data/test1.csv', ['latitude', 'longitude'])
+            dataProvider.getFromFile('./data/test1.csv', ['latitude', 'longitude'])
                 .then(fn)
                 .catch(error => {
                     console.error(error);
                     fn(null);
                 })
         })
-    //    TODO: socket.emit('get week')
+    //    TODO: socket.emit('get week') from calculation/density
     })
 };
 
