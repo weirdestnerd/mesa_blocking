@@ -13,11 +13,17 @@ function Coord(lat = null, lng = null) {
         return this.lat === null && this.lng === null;
     };
     this.log = () => {
-        console.log("lat: %d, lng: %d", this.lat, this.lng);
+        let message = `(lat: ${this.lat}, lng: ${this.lng})`;
+        console.log(message);
+        return message;
     }
 }
 
-function Grid() {
+function Grid(name) {
+    if (!name) {
+        console.warn(`Creating Grid without 'name' identifier.`);
+        this.name = "";
+    } else this.name = name;
     this.topLeft = new Coord();
     this.topRight = new Coord();
     this.bottomLeft = new Coord();
@@ -76,15 +82,31 @@ function Grid() {
         return result;
     };
 
+    this.contains = location => {
+        if (!location) {
+            console.error('Provide location to check.');
+            return;
+        }
+        if (!location instanceof Coord) {
+            console.error('Grid.contains: Type of location must be utils/Coord');
+            return;
+        }
+
+        function isBoundedByTopAndBottom() {
+            return this.topLeft.lat >= location.lat && this.bottomLeft.lat <= location.lat;
+        }
+
+        function isBoundedByLeftAndRight() {
+            return this.topRight.lng >= location.lng && this.topLeft.lng <= location.lng;
+        }
+
+        return isBoundedByTopAndBottom() && isBoundedByLeftAndRight();
+    };
+
     this.log = () => {
-        console.log("TopLeft: ");
-        this.topLeft.log();
-        console.log("TopRight: ");
-        this.topRight.log();
-        console.log("BottomLeft: ");
-        this.bottomLeft.log();
-        console.log("BottomRight: ");
-        this.bottomRight.log();
+        let message = `Grid [${this.name}]: {TopLeft: ${this.topLeft.log()}, TopRight: ${this.topRight.log()}, BottomLeft: ${this.bottomLeft.log()}, BottomRight: ${this.bottomRight.log()}}`;
+        console.log(message);
+        return message;
     };
 }
 
@@ -175,13 +197,63 @@ function NextBlock(coord, direction) {
     return result;
 }
 
-//TODO: returns immutable object, fix that
+//FIXME: returns immutable object, fix that
 function CloneObject(object) {
     return Object.create(object);
     // let clone = {};
     // clone.prototype = Object.create(Object.getPrototypeOf(object));
     // console.log(Object.getPrototypeOf(clone));
     // return Object.assign(clone, object);
+}
+
+function Region() {
+    this.name = name;
+    this.northEast = new Coord();
+    this.southEast = new Coord();
+    this.northWest = new Coord();
+    this.southWest = new Coord();
+    //TODO: fill region coordinates
+    this.contains = location => {
+        if (!location) {
+            console.error('Provide location to check.');
+            return;
+        }
+        if (!location instanceof Coord) {
+            console.error('Region.contains: Type of location must be utils/Coord');
+            return;
+        }
+
+        function isBoundedByTopAndBottom() {
+            return this.northEast.lat >= location.lat && this.southEast.lat <= location.lat;
+        }
+
+        function isBoundedByLeftAndRight() {
+            return this.northEast.lng >= location.lng && this.northWest.lng <= location.lng;
+        }
+
+        return isBoundedByTopAndBottom() && isBoundedByLeftAndRight();
+    };
+}
+
+function distanceBetween(firstLocation, secondLocation) {
+    if (!(firstLocation instanceof Coord) || !(secondLocation instanceof Coord)) {
+        console.error("distanceBetween: Type of coord must be utils/Coord");
+        return;
+    }
+    if (firstLocation.isNull() || secondLocation.isNull()) {
+        console.error("Coord is not initialized");
+        return;
+    }
+    let r1 = firstLocation.lat * degToRad;
+    let r2 = secondLocation.lat * degToRad;
+    let d1 = (firstLocation.lat - secondLocation.lat) * degToRad;
+    let d2 = (firstLocation.lng - secondLocation.lng) * degToRad;
+
+    let a = Math.sin(d1/2) * Math.sin(d1/2) +
+        Math.cos(r1) * Math.cos(r2) *
+        Math.sin(d2/2) * Math.sin(d2/2);
+    let c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return earthRadius * c;
 }
 
 module.exports = {
@@ -191,5 +263,7 @@ module.exports = {
     NextLat: calculateLatByDistance,
     NextLng: calculateLngByDistance,
     NextBlock: NextBlock,
-    CloneObject: CloneObject
+    CloneObject: CloneObject,
+    Distance: distanceBetween,
+    Region: Region
 };
