@@ -1,5 +1,5 @@
 // get data based on type and location provided
-const customerSchema = require('./customer_schema');
+const excelCustomerSchema = require('./customer_schema');
 const readXlsxFile = require('read-excel-file');
 const utils = require('../utils');
 const fs = require('fs');
@@ -14,11 +14,11 @@ function getExcelData(path, schema) {
                 return property.trim().toUpperCase().replace(' ', '_');
             });
             for (let property of transformedSchema) {
-                if (customerSchema.hasOwnProperty(property)) {
-                    excelSchema[property] = utils.CloneObject(customerSchema[property]);
+                if (excelCustomerSchema.hasOwnProperty(property)) {
+                    excelSchema[property] = utils.CloneObject(excelCustomerSchema[property]);
                 }
                 else {
-                    console.warn(`Property "${property}" is not valid.`);
+                    console.warn(`Property "${property}" is not valid. Check schema.`);
                 }
             }
         }());
@@ -38,23 +38,46 @@ function getExcelData(path, schema) {
 function getCSVData(path, schema) {
     return new Promise(resolve => {
         let data = [];
+        let csvCustomerSchema = {};
+        let csvSchema = [];
         let transformedSchema = schema.map(property => {
             return property.trim().toUpperCase().replace(' ', '_');
         });
+
+        function convertRequestedSchema(headers) {
+            for (let header of headers) {
+                let prop = header.trim().toUpperCase().replace(' ', '_');
+                csvCustomerSchema[prop] = {
+                    prop: prop,
+                    location: headers.indexOf(header)
+                }
+            }
+            for (let prop of transformedSchema) {
+                if (csvCustomerSchema.hasOwnProperty(prop)) {
+                    csvSchema.push(headers[csvCustomerSchema[prop].location]);
+                }
+            }
+        }
+
         fs.createReadStream(path)
             .pipe(csv())
+            .on('headers', headers => {
+                convertRequestedSchema(headers);
+            })
             .on('data', row => {
                 let requested = {};
-                for (let property of transformedSchema) {
+                for (let property of csvSchema) {
                     if (row.hasOwnProperty(property)) {
-                        requested[property] = row[property];
+                        let standardProperty = property.trim().toUpperCase().replace(' ', '_');
+                        requested[standardProperty] = row[property];
                     } else {
-                        console.warn(`Property "${property}" is not valid.`);
+                        console.warn(`Property "${property}" is not valid. Check schema.`);
                     }
                 }
                 data.push(requested);
             })
             .on('end', () => {
+                console.log(data.length)
                 resolve(data);
             });
     });
@@ -103,5 +126,6 @@ module.exports = {
     getFromDatabase: readDatabase,
 };
 
-// readFile('./test.csv', ['latitude', 'longitude']).then(console.log).catch(console.log);
+// readFile('./weeks/Can Count Week One.csv', ['Latitude', 'Longitude']).then(console.log).catch(console.log);
+// readFile('./allcustomers.csv', ['Latitude', 'Longitude']).then(console.log).catch(console.log);
 // readFile('./test.xlsx', ['latitude', 'longitude']).then(console.log).catch(console.log);
