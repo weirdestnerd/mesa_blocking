@@ -59,7 +59,7 @@ let MesaCityGridAsJSON = {
             let currentColumn = utils.NextLng(currentRow, utils.Directions.West);
             let rowGrids = [];
             while (isBounded(currentColumn)) {
-                let grid = new Grid();
+                let grid = new Grid("grid");
                 grid.topLeft = utils.CloneObject(currentColumn);
                 grid.create();
                 rowGrids.unshift(grid);
@@ -98,7 +98,7 @@ let MesaCityGridAsJSON = {
             let currentColumn = utils.NextLng(currentRow, utils.Directions.West);
             let rowGrids = [];
             while (isBounded(currentColumn)) {
-                let grid = new Grid();
+                let grid = new Grid("grid");
                 grid.topLeft = utils.CloneObject(currentColumn);
                 grid.create();
                 rowGrids.unshift(grid);
@@ -136,7 +136,7 @@ let MesaCityGridAsJSON = {
             let currentColumn = utils.NextLng(currentRow, utils.Directions.East);
             let rowGrids = [];
             while (isBounded(currentColumn)) {
-                let grid = new Grid();
+                let grid = new Grid("grid");
                 grid.bottomRight = utils.CloneObject(currentColumn);
                 grid.create();
                 rowGrids.push(grid);
@@ -175,7 +175,7 @@ let MesaCityGridAsJSON = {
             let currentColumn = utils.NextLng(currentRow, utils.Directions.East);
             let rowGrids = [];
             while (isBounded(currentColumn)) {
-                let grid = new Grid();
+                let grid = new Grid("grid");
                 grid.topRight = utils.CloneObject(currentColumn);
                 grid.create();
                 rowGrids.push(grid);
@@ -195,12 +195,6 @@ let MesaCityGridAsJSON = {
         }
     }());
 
-}());
-
-(function calculateRegions() {
-    for (let section of MesaCity.sections){
-    //  TODO: find mid lat lng along all edges of each section and create region
-    }
 }());
 
 //    return grid
