@@ -27,16 +27,6 @@ block content
 
 block scripts
     include dependency_scripts
-    script.
-        const mapconsole = message => {
-            if (typeof message !== 'string') {
-                console.error('map console message must be string');
-                // noinspection JSAnnotator
-                return;
-            }
-            document.querySelector('p#console').innerHTML = message;
-            console.log(message);
-        }
     script(src='/javascripts/utils.js')
     script(src='/javascripts/leaflet.js')
     script(src='/javascripts/clientSocketIO.js')
