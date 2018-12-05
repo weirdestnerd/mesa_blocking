@@ -18,24 +18,22 @@ let getGrid = io => {
 let getData = io => {
     io.on('connection', socket => {
         socket.on('get all customers', fn => {
-            //TODO: change file path and schema
-            dataProvider.getFromFile('./data/test.csv', ['latitude', 'longitude'])
+            dataProvider.getFromFile('./data/allcustomers.csv', ['latitude', 'longitude'])
                 .then(fn)
                 .catch(error => {
                     console.error(error);
                     fn(null);
                 })
         });
-        socket.on('get active customers', fn => {
-            //TODO: change file path and schema
-            dataProvider.getFromFile('./data/test1.csv', ['latitude', 'longitude'])
+        socket.on('load week', (selectedWeek, fn) => {
+            dataProvider.getFromFile('./data/weeks/' + selectedWeek, ['latitude', 'longitude'])
                 .then(fn)
                 .catch(error => {
                     console.error(error);
                     fn(null);
                 })
-        })
-    //    TODO: socket.emit('get week') from calculation/density
+        });
+        // socket.on('calculate density')
     })
 };
 
