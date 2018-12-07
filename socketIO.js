@@ -1,5 +1,6 @@
 const GridBlock = require('./processing/preprocess').MesaCityGridAsBlockArray;
 const dataProvider = require('./data/provider');
+const densityCalculator = require('./calculation/density');
 
 let connection = io => {
     io.on('connection', socket => {
@@ -33,7 +34,17 @@ let getData = io => {
                     fn(null);
                 })
         });
-        // socket.on('calculate density')
+        socket.on('calculate density', (data, fn) => {
+            let mesaCity = densityCalculator.sectionDensity(data);
+            let result = [];
+            for (let section of Object.values(mesaCity.sections)) {
+                result.push({
+                    latlngs: section.toBlockArray(),
+                    density: section.density()
+                })
+            }
+            fn(result);
+        })
     })
 };
 
