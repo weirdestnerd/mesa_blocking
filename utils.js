@@ -12,6 +12,9 @@ function Coord(lat = null, lng = null) {
     this.isNull = () => {
         return this.lat === null && this.lng === null;
     };
+    this.toArray = () => {
+        return [this.lat, this.lng]
+    };
     this.log = () => {
         let message = `(lat: ${this.lat}, lng: ${this.lng})`;
         console.log(message);
@@ -28,6 +31,8 @@ function Grid(name) {
     this.topRight = new Coord();
     this.bottomLeft = new Coord();
     this.bottomRight = new Coord();
+    this.customers = 0;
+    this.pickups = 0;
 
     this.create = () => {
     //    if all corners are null, throw error
@@ -91,20 +96,25 @@ function Grid(name) {
             console.error('Grid.contains: Type of location must be utils/Coord');
             return;
         }
-
-        function isBoundedByTopAndBottom() {
-            return this.topLeft.lat >= location.lat && this.bottomLeft.lat <= location.lat;
+        function isBoundedByTopAndBottom(grid) {
+            return grid.topLeft.lat >= location.lat && grid.bottomLeft.lat <= location.lat;
         }
 
-        function isBoundedByLeftAndRight() {
-            return this.topRight.lng >= location.lng && this.topLeft.lng <= location.lng;
+        function isBoundedByLeftAndRight(grid) {
+            return grid.topRight.lng >= location.lng && grid.topLeft.lng <= location.lng;
         }
 
-        return isBoundedByTopAndBottom() && isBoundedByLeftAndRight();
+        return isBoundedByTopAndBottom(this) && isBoundedByLeftAndRight(this);
+    };
+
+    this.density = () => {
+        if (this.customers !== 0)
+            return this.pickups / this.customers;
+        return this.pickups;
     };
 
     this.log = () => {
-        let message = `Grid [${this.name}]: {TopLeft: ${this.topLeft.log()}, TopRight: ${this.topRight.log()}, BottomLeft: ${this.bottomLeft.log()}, BottomRight: ${this.bottomRight.log()}}`;
+        let message = `Grid [${this.name}]: {Customers: ${this.customers}, TopLeft: ${this.topLeft.log()}, TopRight: ${this.topRight.log()}, BottomLeft: ${this.bottomLeft.log()}, BottomRight: ${this.bottomRight.log()}}`;
         console.log(message);
         return message;
     };
