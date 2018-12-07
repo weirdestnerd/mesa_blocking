@@ -41,9 +41,9 @@ let MesaCityGridAsBlockArray = [];
             }
 
             let rowDiagonalBoundaries =  {
-                northWest: new Coord(currentRow.lat, sectionOne.southWest.lng),
+                northWest: new Coord(currentRow.lat, sectionOne.northWest.lng),
                 northEast: currentRow,
-                southWest: utils.NextLat(new Coord(currentRow.lat, sectionOne.southWest.lng), utils.Directions.South)
+                southWest: utils.NextLat(new Coord(currentRow.lat, sectionOne.northWest.lng), utils.Directions.South)
             };
 
             MesaCityGrid.sectionOne.push(rowGrids);
@@ -82,9 +82,9 @@ let MesaCityGridAsBlockArray = [];
             }
 
             let rowDiagonalBoundaries =  {
-                northWest: new Coord(currentRow.lat, sectionTwo.southWest.lng),
+                northWest: new Coord(currentRow.lat, sectionTwo.northWest.lng),
                 northEast: currentRow,
-                southWest: utils.NextLat(new Coord(currentRow.lat, sectionTwo.southWest.lng), utils.Directions.South)
+                southWest: utils.NextLat(new Coord(currentRow.lat, sectionTwo.northWest.lng), utils.Directions.South)
             };
 
             MesaCityGrid.sectionTwo.push(rowGrids);
@@ -124,7 +124,7 @@ let MesaCityGridAsBlockArray = [];
 
             let rowDiagonalBoundaries =  {
                 northWest: utils.NextLat(currentRow, utils.Directions.North),
-                northEast: utils.NextLat(new Coord(currentRow.lat, sectionThree.southEast.lng), utils.Directions.North),
+                northEast: utils.NextLat(new Coord(currentRow.lat, sectionThree.northEast.lng), utils.Directions.North),
                 southWest: currentRow
             };
 
@@ -162,11 +162,10 @@ let MesaCityGridAsBlockArray = [];
                 MesaCityGridAsBlockArray.push(grid.toBlockArray());
                 currentColumn = utils.NextLng(currentColumn, utils.Directions.East);
             }
-
             let rowDiagonalBoundaries = {
                 northWest: utils.CloneObject(currentRow),
-                northEast: new Coord(currentRow.lat, sectionFour.southEast.lng),
-                southWest: new Coord(sectionFour.southEast.lat, currentRow.lng),
+                northEast: new Coord(currentRow.lat, sectionFour.northEast.lng),
+                southWest: utils.NextLat(currentRow, utils.Directions.South)
             };
 
             MesaCityGrid.sectionFour.push(rowGrids);
@@ -179,6 +178,9 @@ let MesaCityGridAsBlockArray = [];
         }
     }());
 
+    // let location = new Coord(33.358000, -111.673278);
+    // MesaCity.findGrid(location)
+    //     .log();
     mapping.customersToGrid();
 }());
 

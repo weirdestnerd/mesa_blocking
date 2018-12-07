@@ -13,15 +13,18 @@ function createHeatmap(customers) {
             if (section.density === 0) {
                 polygon.setStyle({color: "gray"})
             } else if (section.density > 0 && section.density < 20) {
-                polygon.setStyle({color: "#99ff99", fillColor: "#99ff99"})
+                let color = "#81ff75";
+                polygon.setStyle({color: color, fillColor: color})
             }
             else {
-                polygon.setStyle({color: "#00cc00", fillColor: "#00cc00"})
+                let color = "#00cc00";
+                polygon.setStyle({color: color, fillColor: color})
             }
             polygon.setStyle({fillOpacity: 0.35});
             heatmap.addLayer(polygon);
         }
-        heatmap.addTo(mymap);
+        if (mymap.getZoom() >= 15)
+            heatmap.addTo(mymap);
     })
 }
 //on zoom in, hide heatmap, show grid
