@@ -3,22 +3,42 @@ let gridline;
 let heatmap;
 let previousSelectedWeekLayer;
 
+function createHeatmap(customers) {
+    socket.emit('calculate density', customers.data, result => {
+        if (heatmap) heatmap.removeFrom(mymap);
+        heatmap = L.layerGroup();
+        console.log(result);
+        for (let section of result) {
+            let polygon = L.polygon(section.latlngs);
+            if (section.density === 0) {
+                polygon.setStyle({color: "gray"})
+            } else if (section.density > 0 && section.density < 20) {
+                polygon.setStyle({color: "#99ff99", fillColor: "#99ff99"})
+            }
+            else {
+                polygon.setStyle({color: "#00cc00", fillColor: "#00cc00"})
+            }
+            polygon.setStyle({fillOpacity: 0.35});
+            heatmap.addLayer(polygon);
+        }
+        heatmap.addTo(mymap);
+    })
+}
 //on zoom in, hide heatmap, show grid
 function showGrid() {
     if (heatmap) heatmap.removeFrom(mymap);
     if (gridline) return gridline.addTo(mymap);
     let grids = getGrids();
     gridline = L.polyline(grids, {color: 'red'}).addTo(mymap);
-    // mymap.fitBounds(gridline.getBounds());
 }
 
 //on zoom out, show heatmap, hide grid
 function showHeatMap() {
     if (gridline) gridline.removeFrom(mymap);
-    if (heatmap) heatmap.addTo(mymap);
-    // getCustomersForSelectedWeek.then(customers => {
-    //    calculate density and set heatmap, then addTo map
-    // })
+    if (heatmap) return heatmap.addTo(mymap);
+    getCustomersForSelectedWeek().then(customers => {
+        createHeatmap(customers)
+    })
 }
 
 (function handleWeekSelection() {
@@ -40,10 +60,7 @@ function showHeatMap() {
                 mymap.addLayer(customers.layer);
                 mapControl.addOverlay(customers.layer, 'selected week');
                 previousSelectedWeekLayer = customers.layer;
-
-                // socket.emit('calculate density', customers[1].data, data => {
-                //    TODO: set heatmap to density
-                // })
+                createHeatmap(customers);
             });
         })
     }
