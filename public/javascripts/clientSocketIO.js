@@ -29,7 +29,7 @@ let getCustomers = () => {
             }
             let mapLayer = L.layerGroup();
             //WARN: reducing data size
-            data = data.slice(0, 100);
+            data = data.slice(0, 1000);
             for (let customer of data) {
                 if (customer && customer.hasOwnProperty('LATITUDE') && customer.hasOwnProperty('LONGITUDE')) {
                     mapLayer.addLayer(L.marker([customer.LATITUDE, customer.LONGITUDE], {icon: customerIcon}));
@@ -74,7 +74,7 @@ let getCustomersForSelectedWeek = () => {
                 return;
             }
             //WARN: reducing data size
-            data = data.slice(0, 100);
+            data = data.slice(0, 1000);
             let mapLayer = L.layerGroup();
             for (let customer of data) {
                 if (customer && customer.hasOwnProperty('LATITUDE') && customer.hasOwnProperty('LONGITUDE')) {

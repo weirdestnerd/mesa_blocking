@@ -77,7 +77,6 @@ function getCSVData(path, schema) {
                 data.push(requested);
             })
             .on('end', () => {
-                console.log(data.length)
                 resolve(data);
             });
     });

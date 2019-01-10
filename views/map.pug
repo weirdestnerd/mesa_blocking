@@ -10,19 +10,21 @@ mixin week_dropdown(weeks)
         button#week_selection.btn.btn-secondary.dropdown-toggle(type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false") Select week
         div.dropdown-menu(aria-labelledby="week_selection")
             each file_name, index in weeks
-                if index === 1
-                    a.dropdown-item.active(href="javascript:void(0)" value=file_name)=file_name
-                else
-                    a.dropdown-item(href="javascript:void(0)" value=file_name)=file_name
+                //if index === 1
+                //    a.dropdown-item.active(href="javascript:void(0)" value=file_name)=file_name
+                //else
+                a.dropdown-item(href="javascript:void(0)" value=file_name)=file_name
 
 block content
     div#view.row
         div#map.col-md-9
             h1=title
             p#console
-            div#mapid
         div#control.col
             +week_dropdown(files)
+    div.row
+        div.col
+            div#mapid
 
 
 block scripts
