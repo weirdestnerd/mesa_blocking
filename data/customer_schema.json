@@ -1,0 +1,71 @@
+{
+  "UNIQUEID": {
+    "prop": "UNIQUEID",
+    "type": "Number",
+    "required": "true"
+  },
+  "NUMBER_OF_BARRELS": {
+    "prop": "NUMBER_OF_BARRELS",
+    "type": "Number"
+  },
+  "FULL_ADDRESS": {
+    "prop": "FULL_ADDRESS",
+    "type": "String"
+  },
+  "CITY": {
+    "prop": "CITY",
+    "type": "String"
+  },
+  "STREET_NUMBER": {
+    "prop": "STREET_NUMBER",
+    "type": "Number"
+  },
+  "STREET_DIRECTION": {
+    "prop": "STREET_DIRECTION",
+    "type": "String"
+  },
+  "STREET_NAME": {
+    "prop": "STREET_NAME",
+    "type": "String"
+  },
+  "STREET_TYPE": {
+    "prop": "STREET_TYPE",
+    "type": "String"
+  },
+  "STREET_POST_DIRECTION": {
+    "prop": "STREET_POST_DIRECTION",
+    "type": "String"
+  },
+  "UNIT_TYPE": {
+    "prop": "UNIT_TYPE",
+    "type": "String"
+  },
+  "UNIT_BUILDING_NUMBER": {
+    "prop": "UNIT_BUILDING_NUMBER",
+    "type": "Number"
+  },
+  "LATITUDE": {
+    "prop": "LATITUDE",
+    "type": "Number"
+  },
+  "LONGITUDE": {
+    "prop": "LONGITUDE",
+    "type": "Number"
+  },
+  "X_COORDINATE": {
+    "prop": "X_COORDINATE",
+    "type": "Number"
+  },
+  "Y_COORDINATE": {
+    "prop": "Y_COORDINATE",
+    "type": "Number"
+  },
+  "DAY": {
+    "prop": "DAY",
+    "type": "String"
+  },
+  "ROUTE": {
+    "prop": "ROUTE",
+    "type": "String"
+  }
+}
