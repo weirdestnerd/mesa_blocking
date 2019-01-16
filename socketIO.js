@@ -1,6 +1,10 @@
+const preprocess = require('./preprocess/main');
+
 let connection = io => {
     io.on('connection', socket => {
-        console.log("connected!!!");
+        socket.on('get zone layout', fn => {
+            preprocess.getLayout().then(fn).catch(console.error);
+        })
     });
 };
 

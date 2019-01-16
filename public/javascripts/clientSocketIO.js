@@ -1,7 +1,7 @@
 const socket = io();
-let allCustomers;
-let mapControl;
 let mapGrids;
+let zoneLayout;
+
 // {name: "", data: "", layer: L.layerGroup}
 let recentlyLoadedWeeksQueue = [];
 
@@ -32,3 +32,18 @@ function addWeekToRecentlyLoaded(week) {
     recentlyLoadedWeeksQueue.shift();
     return recentlyLoadedWeeksQueue.push(week);
 }
+
+let getInitialZoneLayout = () => {
+    return new Promise((resolve, reject) => {
+        mapconsole.message('Getting Zone Layout ...');
+        if (zoneLayout) resolve(zoneLayout);
+        socket.emit('get zone layout', layout => {
+            if (!layout) {
+                mapconsole.error('Internal Server Error.');
+                reject();
+            }
+            zoneLayout = layout;
+            resolve(zoneLayout);
+        })
+    });
+};
