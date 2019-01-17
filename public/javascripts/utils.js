@@ -8,6 +8,7 @@ const mapconsole = {
             console.error('map console message must be string');
             return;
         }
+        this.done();
         document.querySelector('p#console').innerHTML = message;
         document.querySelector('p#console').classList = 'bg-success';
         console.log(message);

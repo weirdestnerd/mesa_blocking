@@ -4,6 +4,14 @@ const readXlsxFile = require('read-excel-file');
 const utils = require('../utils');
 const fs = require('fs');
 const csv = require('csv-parser');
+const shapefile = require('shapefile');
+const proj4 = require('proj4');
+const path = require('path');
+
+let zoneGeoJSON;
+let coordProjection;
+let shpFilePath = path.join(__dirname, './GreenWasteRoutes.shp');
+let dbfFilePath = path.join(__dirname, './GreenWasteRoutes.dbf');
 
 function getExcelData(path, schema) {
     return new Promise((resolve, reject) => {
@@ -118,13 +126,83 @@ function readFile(path, schema) {
     });
 }
 
-function readDatabase() {}
+function readDatabase() {return}
+
+function getProjection() {
+    return new Promise((resolve, reject) => {
+        if (coordProjection) resolve(coordProjection);
+        let prjFile = path.join(__dirname, './GreenWasteRoutes.prj');
+        fs.readFile(prjFile, 'utf8', (error, data) => {
+            if (error) reject(error);
+            coordProjection = data;
+            resolve(coordProjection);
+        })
+    })
+}
+
+function transformCoordinates(coord) {
+    return proj4(coordProjection).inverse(coord);
+}
+
+function transformFeatureCoordinates(feature) {
+    function parsePointCoord() {
+        feature.geometry.coordinates = transformCoordinates(feature.geometry.coordinates)
+    }
+
+    function parseLineStringCoord() {
+        feature.geometry.coordinates = feature.geometry.coordinates.map(coord => {
+            return transformCoordinates(coord);
+        });
+    }
+
+    function parsePolygonCoord() {
+        feature.geometry.coordinates[0] = feature.geometry.coordinates[0].map(coord => {
+            return transformCoordinates(coord);
+        });
+    }
+    switch (feature.geometry.type) {
+        case 'Point':
+            parsePointCoord();
+            break;
+        case 'LineString':
+            parseLineStringCoord();
+            break;
+        case 'Polygon':
+            parsePolygonCoord();
+            break;
+    }
+    return feature;
+}
+
+function getZone() {
+    return new Promise((resolve, reject) => {
+        if (zoneGeoJSON) resolve(zoneGeoJSON);
+        shapefile.read(shpFilePath, dbfFilePath)
+            .then(geoJSON => {
+                zoneGeoJSON = geoJSON;
+                resolve(zoneGeoJSON);
+            })
+            .catch(error => {
+                console.error(error.stack);
+                reject(error.stack)
+            })
+    });
+}
+
+function readGeoJSON() {
+    return new Promise(resolve => {
+        Promise.all([getProjection(), getZone()])
+            .then(() => {
+                zoneGeoJSON.features = zoneGeoJSON.features.map(feature => {
+                    return transformFeatureCoordinates(feature);
+                });
+                resolve(zoneGeoJSON);
+            });
+    })
+}
 
 module.exports = {
-    getFromFile: readFile,
-    getFromDatabase: readDatabase,
+    getWeeklyDataFromFile: readFile,
+    getWeeklyDataFromDatabase: readDatabase,
+    getGeoJSONFromFile: readGeoJSON
 };
-
-// readFile('./weeks/Can Count Week One.csv', ['Latitude', 'Longitude']).then(console.log).catch(console.log);
-// readFile('./allcustomers.csv', ['Latitude', 'Longitude']).then(console.log).catch(console.log);
-// readFile('./test.xlsx', ['latitude', 'longitude']).then(console.log).catch(console.log);

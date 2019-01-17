@@ -1,9 +1,9 @@
-const preprocess = require('./preprocess/main');
+const provider = require('./data/provider');
 
 let connection = io => {
     io.on('connection', socket => {
         socket.on('get zone layout', fn => {
-            preprocess.getLayout().then(fn).catch(console.error);
+            provider.getGeoJSONFromFile().then(fn).catch(console.error);
         })
     });
 };
