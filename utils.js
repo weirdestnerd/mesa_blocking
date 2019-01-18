@@ -266,6 +266,70 @@ function distanceBetween(firstLocation, secondLocation) {
     return earthRadius * c;
 }
 
+/*
+    source: https://www.geeksforgeeks.org/how-to-check-if-a-given-point-lies-inside-a-polygon/
+ */
+function Polygon(polygon) {
+    this.polygon = polygon;
+
+    function onSegment(polygonElement, coord, polygonElement2) {
+        return coord[0] <= Math.max(polygonElement[0], polygonElement2[0]) &&
+        coord[0] >= Math.min(polygonElement[0], polygonElement2[0]) &&
+        coord[1] <= Math.max(polygonElement[1], polygonElement2[1]) &&
+        coord[1] >= Math.min(polygonElement[1], polygonElement2[1]);
+    }
+
+    function orientationOf(polygonElement, coord, polygonElement2) {
+        let val =
+            (coord[1] - polygonElement[1]) * (polygonElement2[0] - coord[0]) -
+            (coord[0] - polygonElement[1]) * (polygonElement2[1] - coord[1]);
+
+        if (val === 0 ) return 0;
+        return (val > 0) ? 1 : 2;
+    }
+
+    function doIntersect(polygonElement, polygonElement2, coord, extreme) {
+        let o1 = orientationOf(polygonElement, polygonElement2, coord);
+        let o2 = orientationOf(polygonElement, polygonElement2, extreme);
+        let o3 = orientationOf(coord, extreme, polygonElement);
+        let o4 = orientationOf(coord, extreme, polygonElement2);
+
+        if (o1 !== o2 && o3 !== o4)
+            return true;
+
+        if (o1 === 0 && onSegment(polygonElement, coord, polygonElement2)) return true;
+
+        if (o2 === 0 && onSegment(polygonElement, extreme, polygonElement2)) return true;
+
+        if (o3 === 0 && onSegment(coord, polygonElement, extreme)) return true;
+
+        if (o4 === 0 && onSegment(coord, polygonElement2, extreme)) return true;
+
+        return false;
+    }
+
+    this.contains = coord => {
+        if (!this.polygon) {
+            console.error("Polygon.contains: Polygon is not initialized")
+        }
+        let extreme = [Math.pow(10, 1000), coord[1]];
+        let size = this.polygon.length;
+        let cursor = 0;
+        let count = 0;
+        while (cursor < size - 1) {
+            let next = cursor++;
+            if (doIntersect(this.polygon[cursor], this.polygon[next], coord, extreme)) {
+                if (orientationOf(this.polygon[cursor], coord, this.polygon[next]) === 0) {
+                    return onSegment(this.polygon[cursor], coord, this.polygon[next]);
+                }
+                count++;
+            }
+            cursor++;
+        }
+        return count % 2 === 1
+    }
+}
+
 module.exports = {
     Directions: Directions,
     Coord: Coord,
@@ -275,5 +339,6 @@ module.exports = {
     NextBlock: NextBlock,
     CloneObject: CloneObject,
     Distance: distanceBetween,
-    Region: Region
+    Region: Region,
+    Polygon: Polygon
 };
