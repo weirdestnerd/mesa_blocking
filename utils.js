@@ -308,6 +308,7 @@ function Polygon(polygon) {
         return false;
     }
 
+    //FIXME: always returns true
     this.contains = coord => {
         if (!this.polygon) {
             console.error("Polygon.contains: Polygon is not initialized")

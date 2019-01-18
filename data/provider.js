@@ -34,6 +34,7 @@ function getExcelData(path, schema) {
         if (!excelSchema) {
             reject('Invalid schema format provided');
         }
+        //FIXME: throws error about opening excel file
         readXlsxFile(fs.createReadStream(path), {schema: excelSchema}).then(({rows, errors}) => {
             if (errors.length !== 0) {
                 reject(`Error reading excel file "${path}" at ${errors[0]}`);
