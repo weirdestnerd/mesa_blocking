@@ -201,8 +201,18 @@ function readGeoJSON() {
     })
 }
 
+function readCustomersFile(schema) {
+    let filePath = path.join(__dirname, '/allcustomers.csv');
+    return new Promise((resolve, reject) => {
+        readFile(filePath, schema)
+            .then(resolve)
+            .catch(reject);
+    })
+}
+
 module.exports = {
     getWeeklyDataFromFile: readFile,
     getWeeklyDataFromDatabase: readDatabase,
+    getAllCustomers: readCustomersFile,
     getGeoJSONFromFile: readGeoJSON
 };
