@@ -1,9 +1,9 @@
-const provider = require('./data/provider');
+const dataProvider = require('./data/provider');
 
 let connection = io => {
     io.on('connection', socket => {
         socket.on('get zone layout', fn => {
-            provider.getGeoJSONFromFile().then(fn).catch(console.error);
+            dataProvider.getGeoJSONFromFile().then(fn).catch(console.error);
         })
     });
 };
