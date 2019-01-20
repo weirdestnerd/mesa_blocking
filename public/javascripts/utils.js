@@ -3,7 +3,7 @@ function getSelectedWeek() {
 }
 
 const mapconsole = {
-    message: function (message) {
+    message: function (message, await) {
         if (typeof message !== 'string') {
             console.error('map console message must be string');
             return;
@@ -12,11 +12,13 @@ const mapconsole = {
         document.querySelector('p#console').innerHTML = message;
         document.querySelector('p#console').classList = 'bg-success';
         console.log(message);
-        setTimeout(function () {
-            if (document.querySelector('p#console').innerHTML === message) {
-                document.querySelector('p#console').innerHTML = '';
-            }
-        }, 5000);
+        if (!await || await === false) {
+            setTimeout(function () {
+                if (document.querySelector('p#console').innerHTML === message) {
+                    document.querySelector('p#console').innerHTML = '';
+                }
+            }, 5000);
+        }
     },
     error: function (message) {
         if (typeof message !== 'string') {
