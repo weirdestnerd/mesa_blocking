@@ -17,17 +17,6 @@ let getInitialZoneLayout = () => {
     });
 };
 
-let getPreprocessedLayout = () => {
-    return new Promise((resolve, reject) => {
-        mapconsole.message('Preprocessing data ...');
-        if (preprocessedLayout) resolve(preprocessedLayout);
-        socket.emit('get preprocess layout', layout => {
-            if (!layout) {
-                mapconsole.error('Internal Server Error');
-                reject();
-            }
-            preprocessedLayout = layout;
-            resolve(preprocessedLayout);
-        })
-    })
-};
+// TODO socket.on(preprocess done) make week selection active and handle selection
+
+let getPreprocessedLayout = () => {};

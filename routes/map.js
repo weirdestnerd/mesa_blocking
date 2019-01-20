@@ -13,6 +13,7 @@ router.get('/', function(req, res, next) {
         }
         res.render('map', { title: 'Map', files: files });
     });
+//    TODO: preprocess data here, onDone: socket.emit data to client
 });
 
 module.exports = router;

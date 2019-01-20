@@ -5,12 +5,12 @@ let defaultMapGeoJSON;
 getInitialZoneLayout().then(layout => {
     mapData = layout;
     defaultMapGeoJSON = L.geoJSON();
-    defaultMapGeoJSON.addData(layout);
+    defaultMapGeoJSON.addData(mapData);
     defaultMapGeoJSON.addTo(mymap);
     mapconsole.message('Zone Layout plotted.');
 });
 
-(function handleWeekSelection() {
+function handleWeekSelection() {
     let allWeeks = [].slice.call(document.querySelectorAll('a.dropdown-item'));
     for (let week of allWeeks) {
         week.addEventListener('click', () => {
@@ -47,4 +47,4 @@ getInitialZoneLayout().then(layout => {
             });
         })
     }
-}());
+}
