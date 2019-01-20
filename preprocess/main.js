@@ -15,7 +15,7 @@
  */
 
 const dataProvider = require('../data/provider');
-const Polgon = require('../utils').Polygon;
+const Polygon = require('../utils').Polygon;
 const fs = require('fs');
 const path = require('path');
 
@@ -27,8 +27,9 @@ function findZoneIndexOf(coord) {
     let index = -1, continueFind = true;
     while (continueFind && index < length - 1) {
         index++;
-        let polygon = new Polgon(zoneGeoJSON.features[index].geometry.coordinates[0]);
-        continueFind = !polygon.contains(coord);
+        let polygon = new Polygon(zoneGeoJSON.features[index].geometry.coordinates[0]);
+        let reversedCoord = [coord[1], coord[0]];
+        continueFind = !polygon.contains(reversedCoord);
     }
     return continueFind ? -1 : index;
 }
@@ -101,5 +102,3 @@ function preprocess() {
 module.exports = {
     run: preprocess
 };
-
-preprocess().then(console.log);
