@@ -1,8 +1,7 @@
 const socket = io();
 let zoneLayout;
-let preprocessedLayout;
 
-let getInitialZoneLayout = () => {
+let getZoneLayout = () => {
     return new Promise((resolve, reject) => {
         mapconsole.message('Getting Zone Layout ...');
         if (zoneLayout) resolve(zoneLayout);
@@ -16,7 +15,3 @@ let getInitialZoneLayout = () => {
         })
     });
 };
-
-// TODO socket.on(preprocess done) make week selection active and handle selection
-
-let getPreprocessedLayout = () => {};

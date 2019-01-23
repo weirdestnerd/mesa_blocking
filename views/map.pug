@@ -7,7 +7,7 @@ block links
 
 mixin week_dropdown(weeks)
     div.dropdown
-        button#week_selection.btn.btn-secondary.dropdown-toggle(type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false") Select week
+        button#week_selection.btn.btn-secondary.dropdown-toggle.disabled(type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false") Select week
         div.dropdown-menu(aria-labelledby="week_selection")
             each file_name, index in weeks
                 //if index === 1
