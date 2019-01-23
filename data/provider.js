@@ -192,6 +192,7 @@ function getZone() {
 
 function readGeoJSON() {
     return new Promise(resolve => {
+        if (zoneGeoJSON) resolve(zoneGeoJSON);
         Promise.all([getProjection(), getZone()])
             .then(() => {
                 zoneGeoJSON.features = zoneGeoJSON.features.map(feature => {
