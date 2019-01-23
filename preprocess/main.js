@@ -18,6 +18,8 @@ const dataProvider = require('../data/provider');
 const Polygon = require('../utils').Polygon;
 const fs = require('fs');
 const path = require('path');
+const dbf = require('dbf');
+const camelcase = require('../utils').Camelcase;
 
 let zoneGeoJSON;
 let allCustomers;
@@ -38,8 +40,8 @@ function assignCustomerToZone() {
     for (let customer of allCustomers) {
         if (customer && customer.hasOwnProperty('LATITUDE') && customer.hasOwnProperty('LONGITUDE')) {
             let index = findZoneIndexOf([customer.LATITUDE, customer.LONGITUDE]);
-            if (index === -1)
-                console.error(`index not found for ${[customer.LATITUDE, customer.LONGITUDE]}`);
+            if (index === -1){}
+                // console.error(`index not found for ${[customer.LATITUDE, customer.LONGITUDE]}`);
             else {
                 let properties = zoneGeoJSON.features[index].properties;
                 properties['customerCount'] = properties.hasOwnProperty('customerCount') ? properties['customerCount'] + 1 : 1;
@@ -57,14 +59,12 @@ function assignWeekDataToZone(filename) {
                 for (let customer of week) {
                     if (customer && customer.hasOwnProperty('LATITUDE') && customer.hasOwnProperty('LONGITUDE')) {
                         let index = findZoneIndexOf([customer.LATITUDE, customer.LONGITUDE]);
-                        if (index === -1)
-                            console.error(`index not found for ${[customer.LATITUDE, customer.LONGITUDE]}`);
+                        if (index === -1){}
+                            // console.error(`index not found for ${[customer.LATITUDE, customer.LONGITUDE]}`);
                         else {
                             let properties = zoneGeoJSON.features[index].properties;
-                            if (!properties.hasOwnProperty('weeks')) properties.weeks = {};
-                            if (!properties.weeks.hasOwnProperty(filename)) properties.weeks[filename] = {};
-                            if (!properties.weeks[filename].hasOwnProperty('count')) properties.weeks[filename].count = 0;
-                            properties.weeks[filename].count++;
+                            if (!properties.hasOwnProperty(filename)) properties[filename] = 0;
+                            properties[filename]++;
                             zoneGeoJSON.features[index].properties = properties;
                         }
                     }
@@ -85,14 +85,35 @@ function preprocess() {
                 fs.readdir(path.join(__dirname, '../data/weeks/'), (error, filenames) => {
                     if (error) reject(error);
                     let apply = filenames.map(filename => {
+                        filename = camelcase(filename);
                         return assignWeekDataToZone(filename);
                     });
                     apply.unshift(dataProvider.getAllCustomers(['latitude', 'longitude']));
                     Promise.all(apply).then(values => {
                         allCustomers = values[0];
                         assignCustomerToZone();
-                        resolve(zoneGeoJSON);
+                        return zoneGeoJSON;
                     })
+                        .then(() => {
+                            let allProperties = zoneGeoJSON.features.map(feature => {
+                                return feature.properties;
+                            });
+                            //FIXME: dbf saves headers as long as 8 letters
+                            let buffer = dbf.structure(allProperties);
+                            let dbfPath = path.join(__dirname, '../data/GreenWasteRoutes.dbf');
+
+                            function toBuffer(ab) {
+                                let buffer = Buffer.alloc(ab.byteLength);
+                                let view = new Uint8Array(ab);
+                                for (let i = 0; i < buffer.length; ++i) {
+                                    buffer[i] = view[i];
+                                }
+                                return buffer;
+                            }
+                            fs.writeFileSync(dbfPath, toBuffer(buffer.buffer));
+                            return zoneGeoJSON;
+                    })
+                        .then(resolve)
                 })
             })
             .catch(reject);
@@ -102,3 +123,7 @@ function preprocess() {
 module.exports = {
     run: preprocess
 };
+
+preprocess().then(geoJson => {
+    console.log('Done!')
+}).catch(console.error);
