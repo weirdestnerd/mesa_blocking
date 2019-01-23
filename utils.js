@@ -290,6 +290,14 @@ function Polygon(polygon) {
     }
 }
 
+function camelcase(value) {
+    let words = value.split(' ');
+    words = words.map(word => {
+        return word[0].toUpperCase() + word.substring(1);
+    });
+    return words.join('');
+}
+
 module.exports = {
     Directions: Directions,
     Coord: Coord,
@@ -300,5 +308,6 @@ module.exports = {
     CloneObject: CloneObject,
     Distance: distanceBetween,
     Region: Region,
-    Polygon: Polygon
+    Polygon: Polygon,
+    Camelcase: camelcase
 };
