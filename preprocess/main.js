@@ -98,7 +98,7 @@ function preprocess() {
                             let allProperties = zoneGeoJSON.features.map(feature => {
                                 return feature.properties;
                             });
-                            //FIXME: dbf saves headers as long as 8 letters
+                            //WARN: dbf saves headers as long as 8 letters
                             let buffer = dbf.structure(allProperties);
                             let dbfPath = path.join(__dirname, '../data/GreenWasteRoutes.dbf');
 

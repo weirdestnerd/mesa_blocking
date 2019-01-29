@@ -11,7 +11,7 @@ getZoneLayout().then(geoJSON => {
    // handle week selection
     let allWeeks = [].slice.call(document.querySelectorAll('a.dropdown-item'));
     for (let week of allWeeks) {
-        //FIXME: use full name after fixing writing headers for properties in preprocess
+        //WARN: property headers are only 8 letters long due to dbf storage limit
         let weekName = week.innerHTML.slice(0, 8);
         let weekGeoJSON = L.geoJSON(mapData, {
             //calculate density on layer creation
