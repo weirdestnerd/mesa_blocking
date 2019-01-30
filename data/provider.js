@@ -1,6 +1,7 @@
 // get data based on type and location provided
 const excelCustomerSchema = require('./customer_schema');
 const readXlsxFile = require('read-excel-file');
+const XLSX = require('xlsx');
 const utils = require('../utils');
 const fs = require('fs');
 const csv = require('csv-parser');
@@ -12,6 +13,72 @@ let zoneGeoJSON;
 let coordProjection;
 let shpFilePath = path.join(__dirname, './GreenWasteRoutes.shp');
 let dbfFilePath = path.join(__dirname, './GreenWasteRoutes.dbf');
+
+function getExcel(path, schema) {
+    return new Promise((resolve, reject) => {
+        let transformedSchema = schema.map(property => {
+            return property.trim().toUpperCase().replace(' ', '_');
+        });
+        let workbook = XLSX.readFile(path);
+        //  check if there are more than 1 worksheets in excel file
+        if (workbook.SheetNames.length > 1) {
+            reject("Excel file has more than one worksheet. Parsing multiple worksheets within same file is not supported yet");
+        }
+        let rows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {header: 1});
+        console.log(typeof rows);
+        //  find intersection between schema and rows. That must be the header row
+        //  if no intersection, either schema is incorrect or file doesn't have header row
+        function findHeaderRow() {
+            let result = {};
+            result.headerIndex = rows.findIndex(row => {
+                let modified = row.map(value => {
+                    if (typeof value === "string")
+                        value.trim().toUpperCase().replace(' ', '_')
+                });
+                let schemaIndex = {};
+                function findSchemaInRow(schemaProp) {
+                    if (modified.includes(schemaProp)) {
+                        schemaIndex[schemaProp] = modified.indexOf(schemaProp);
+                        return true;
+                    }
+                    return false;
+                }
+                //  if every schema property is found in current row,
+                // save index of schema properties
+                if (transformedSchema.every(findSchemaInRow)) {
+                    result.schemaIndex = schemaIndex;
+                    return true;
+                }
+                return false;
+            });
+
+            if (result.headerIndex === -1) {
+                reject("Excel file doesn't have a header row.")
+            }
+            return result;
+        }
+
+        let headerProp = findHeaderRow();
+        let data = [];
+        //  populate data with values at every row after the header row that have the schema indices
+        rows.slice(headerProp.headerIndex + 1).forEach((row, rowIndex) => {
+            let dataRow = {};
+            Object.keys(headerProp.schemaIndex).forEach(schemaProp => {
+                let index = headerProp.schemaIndex[schemaProp];
+                if (row[index] !== undefined) {
+                    dataRow[schemaProp] = row[index];
+                } else {
+                    console.warn(`Schema property '${schemaProp}' is not available at row ${rowIndex} and column ${index}.`)
+                }
+            });
+            data.push(dataRow);
+        });
+        resolve(data);
+    })
+}
+
+let filePath = path.join(__dirname, './Calculated Can Count Week 3.xlsx');
+getExcel(filePath, ['latitude', 'longitude']).then(console.log);
 
 function getExcelData(path, schema) {
     return new Promise((resolve, reject) => {
