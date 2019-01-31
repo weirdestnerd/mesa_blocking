@@ -22,8 +22,14 @@ getZoneLayout().then(geoJSON => {
                 //if there are customers and there are pick ups
                 if (customerCount && customerCount !== 0 && weekCount && weekCount !== 0) {
                     density = ((weekCount / customerCount) * 100).toFixed(2);
-                } else {
-                    density = 0
+                }
+                //  if there are customers and no pick ups
+                else if (customerCount && customerCount !== 0 && (!weekCount || weekCount === 0)) {
+                    density = 0;
+                }
+                // if there are no customers and either there are pick ups or not
+                else {
+                    density = -1;
                 }
                 feature.properties[weekName + 'Density'] = density;
                 feature.properties['popUp'] = `Customers: ${customerCount}, Pick Ups: ${weekCount}, Density Percentage: ${density}%`;
@@ -34,6 +40,7 @@ getZoneLayout().then(geoJSON => {
             let density = parseInt(feature.properties[weekName + 'Density']);
             let style = {fill: true, fillOpacity: 0.8};
             switch (true) {
+                case density < 0: style.fillOpacity = 0; break;
                 case density === 0: style.fillColor = 'gray'; break;
                 case density < 10:
                     style.fillColor =  '#ffffcc'; break;
