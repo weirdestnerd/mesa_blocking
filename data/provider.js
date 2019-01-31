@@ -14,7 +14,7 @@ let coordProjection;
 let shpFilePath = path.join(__dirname, './GreenWasteRoutes.shp');
 let dbfFilePath = path.join(__dirname, './GreenWasteRoutes.dbf');
 
-function getExcel(path, schema) {
+function getExcelData(path, schema) {
     return new Promise((resolve, reject) => {
         let transformedSchema = schema.map(property => {
             return property.trim().toUpperCase().replace(' ', '_');
@@ -25,15 +25,17 @@ function getExcel(path, schema) {
             reject("Excel file has more than one worksheet. Parsing multiple worksheets within same file is not supported yet");
         }
         let rows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {header: 1});
-        console.log(typeof rows);
+
         //  find intersection between schema and rows. That must be the header row
         //  if no intersection, either schema is incorrect or file doesn't have header row
         function findHeaderRow() {
             let result = {};
             result.headerIndex = rows.findIndex(row => {
+                //  capitalize each string on current row
                 let modified = row.map(value => {
                     if (typeof value === "string")
-                        value.trim().toUpperCase().replace(' ', '_')
+                        return value.trim().toUpperCase().replace(' ', '_');
+                    return value;
                 });
                 let schemaIndex = {};
                 function findSchemaInRow(schemaProp) {
@@ -68,47 +70,14 @@ function getExcel(path, schema) {
                 if (row[index] !== undefined) {
                     dataRow[schemaProp] = row[index];
                 } else {
-                    console.warn(`Schema property '${schemaProp}' is not available at row ${rowIndex} and column ${index}.`)
+                    console.warn(`Schema property '${schemaProp}' is not available at row ${rowIndex} and column ${index}.`);
+                    dataRow[schemaProp] = null;
                 }
             });
             data.push(dataRow);
         });
         resolve(data);
     })
-}
-
-let filePath = path.join(__dirname, './Calculated Can Count Week 3.xlsx');
-getExcel(filePath, ['latitude', 'longitude']).then(console.log);
-
-function getExcelData(path, schema) {
-    return new Promise((resolve, reject) => {
-        let excelSchema = {};
-
-        (function processSchema() {
-            let transformedSchema = schema.map(property => {
-                return property.trim().toUpperCase().replace(' ', '_');
-            });
-            for (let property of transformedSchema) {
-                if (excelCustomerSchema.hasOwnProperty(property)) {
-                    excelSchema[property] = utils.CloneObject(excelCustomerSchema[property]);
-                }
-                else {
-                    console.warn(`Property "${property}" is not valid. Check schema.`);
-                }
-            }
-        }());
-
-        if (!excelSchema) {
-            reject('Invalid schema format provided');
-        }
-        //FIXME: throws error about opening excel file
-        readXlsxFile(fs.createReadStream(path), {schema: excelSchema}).then(({rows, errors}) => {
-            if (errors.length !== 0) {
-                reject(`Error reading excel file "${path}" at ${errors[0]}`);
-            }
-            resolve(rows);
-        })
-    });
 }
 
 function getCSVData(path, schema) {

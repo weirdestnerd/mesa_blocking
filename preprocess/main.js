@@ -84,6 +84,19 @@ function preprocess() {
             .then(() => {
                 fs.readdir(path.join(__dirname, '../data/weeks/'), (error, filenames) => {
                     if (error) reject(error);
+
+                    function containsSpace(filename) {
+                        return filename.includes(' ');
+                    }
+
+                    if (filenames.some(containsSpace)) {
+                        filenames.forEach(filename => {
+                            let oldPath = path.join(__dirname, '../data/weeks/' + filename);
+                            let newPath = path.join(__dirname, '../data/weeks/' + camelcase(filename));
+                            fs.renameSync(oldPath, newPath);
+                        })
+                    }
+
                     let apply = filenames.map(filename => {
                         filename = camelcase(filename);
                         return assignWeekDataToZone(filename);

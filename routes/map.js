@@ -12,17 +12,7 @@ router.get('/', function(req, res, next) {
             console.error(error);
             return;
         }
-        function containsSpace(filename) {
-            return filename.includes(' ');
-        }
 
-        if (!files.every(containsSpace)) {
-            files.forEach(filename => {
-                let oldPath = path.join(__dirname, '../data/weeks/' + filename);
-                let newPath = path.join(__dirname, '../data/weeks/' + camelcase(filename));
-                fs.renameSync(oldPath, newPath);
-            })
-        }
         files = files.map(file => {return camelcase(file)});
         res.render('map', { title: 'Map', files: files });
     });
