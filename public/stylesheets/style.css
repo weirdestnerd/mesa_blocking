@@ -22,3 +22,8 @@ div#control {
 div#mapid {
     height: 600px;
 }
+
+p#console {
+    padding-left: 5px;
+    color: white;
+}

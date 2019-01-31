@@ -1,75 +1,75 @@
-//handle user interactions with map
-let gridline;
-let heatmap;
-let previousSelectedWeekLayer;
+let weeklyGeoJSON = {};
+let currentMapLayer;
 
-function createHeatmap(customers) {
-    socket.emit('calculate density', customers.data, result => {
-        if (heatmap) heatmap.removeFrom(mymap);
-        heatmap = L.layerGroup();
-        console.log(result);
-        for (let section of result) {
-            let polygon = L.polygon(section.latlngs);
-            if (section.density === 0) {
-                polygon.setStyle({color: "gray"})
-            } else if (section.density > 0 && section.density < 20) {
-                let color = "#81ff75";
-                polygon.setStyle({color: color, fillColor: color})
-            }
-            else {
-                let color = "#00cc00";
-                polygon.setStyle({color: color, fillColor: color})
-            }
-            polygon.setStyle({fillOpacity: 0.35});
-            heatmap.addLayer(polygon);
-        }
-        if (mymap.getZoom() >= 15)
-            heatmap.addTo(mymap);
-    })
-}
-//on zoom in, hide heatmap, show grid
-function showGrid() {
-    if (heatmap) heatmap.removeFrom(mymap);
-    if (gridline) return gridline.addTo(mymap);
-    let grids = getGrids();
-    gridline = L.polyline(grids, {color: 'red'}).addTo(mymap);
-}
-
-//on zoom out, show heatmap, hide grid
-function showHeatMap() {
-    if (gridline) gridline.removeFrom(mymap);
-    if (heatmap) return heatmap.addTo(mymap);
-    getCustomersForSelectedWeek().then(customers => {
-        createHeatmap(customers)
-    })
-}
-
-(function handleWeekSelection() {
+getZoneLayout().then(geoJSON => {
+    L.geoJSON(geoJSON, {
+        style: {fill: false}
+    }).addTo(mymap);
+    mapconsole.message('Zone plotted!');
+    return geoJSON;
+}).then(mapData => {
+   // handle week selection
     let allWeeks = [].slice.call(document.querySelectorAll('a.dropdown-item'));
     for (let week of allWeeks) {
+        //WARN: property headers are only 8 letters long due to dbf storage limit
+        let weekName = week.innerHTML.slice(0, 8);
+        let weekGeoJSON = L.geoJSON(mapData, {
+            //calculate density on layer creation
+            onEachFeature: function (feature, layer) {
+                let customerCount = feature.properties.customer;
+                let weekCount = feature.properties[weekName];
+                let density;
+                //if there are customers and there are pick ups
+                if (customerCount && customerCount !== 0 && weekCount && weekCount !== 0) {
+                    density = ((weekCount / customerCount) * 100).toFixed(2);
+                } else {
+                    density = 0
+                }
+                feature.properties[weekName + 'Density'] = density;
+                feature.properties['popUp'] = `Customers: ${customerCount}, Pick Ups: ${weekCount}, Density Percentage: ${density}%`;
+                layer.bindPopup(feature.properties.popUp);
+            }
+        });
+        weekGeoJSON.setStyle(function (feature) {
+            let density = parseInt(feature.properties[weekName + 'Density']);
+            let style = {fill: true, fillOpacity: 0.8};
+            switch (true) {
+                case density === 0: style.fillColor = 'gray'; break;
+                case density < 10:
+                    style.fillColor =  '#ffffcc'; break;
+                case (density >= 10) && (density < 20):
+                    style.fillColor =  '#ffeda0'; break;
+                case (density >= 20) && (density < 30):
+                    style.fillColor =  '#fed976'; break;
+                case (density >= 30) && (density < 40):
+                    style.fillColor =  '#feb24c'; break;
+                case (density >= 40) && (density < 50):
+                    style.fillColor =  '#fd8d3c'; break;
+                case (density >= 50) && (density < 60):
+                    style.fillColor =  '#fc4e2a'; break;
+                case (density >= 60) && (density < 70):
+                    style.fillColor =  '#e31a1c'; break;
+                case (density >= 70 && density < 80):
+                    style.fillColor =  '#e31423'; break;
+                case (density >= 80 && density < 90):
+                    style.fillColor =  '#C6000C'; break;
+                case (density >= 90 && density < 100):
+                    style.fillColor =  '#bd0026'; break;
+                case (density >= 100):
+                    style.fillColor =  '#800026'; break;
+            }
+            return style;
+        });
+        weeklyGeoJSON[week.innerHTML] = weekGeoJSON;
         week.addEventListener('click', () => {
             allWeeks.forEach(otherWeek => {
                 otherWeek.classList.remove('active');
             });
             week.classList.add('active');
-            if (!allCustomers) {
-                getCustomers()
-            }
-            getCustomersForSelectedWeek().then(customers => {
-                if (previousSelectedWeekLayer) {
-                    mapControl.removeLayer(previousSelectedWeekLayer);
-                    previousSelectedWeekLayer.removeFrom(mymap);
-                }
-                mymap.addLayer(customers.layer);
-                mapControl.addOverlay(customers.layer, 'selected week');
-                previousSelectedWeekLayer = customers.layer;
-                createHeatmap(customers);
-            });
-        })
+            if (currentMapLayer) mymap.removeLayer(currentMapLayer);
+            currentMapLayer = weeklyGeoJSON[week.innerHTML];
+            mymap.addLayer(currentMapLayer);
+        });
+        document.querySelector('#week_selection').classList.remove('disabled');
     }
-}());
-
-mymap.on('zoom', zoomEvent => {
-    mymap.getZoom() >= 15 ? showGrid() : showHeatMap();
 });
-

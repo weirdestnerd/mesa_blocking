@@ -266,6 +266,38 @@ function distanceBetween(firstLocation, secondLocation) {
     return earthRadius * c;
 }
 
+function Polygon(polygon) {
+    this.polygon = polygon;
+
+    /*
+        source: https://www.oodlestechnologies.com/blogs/Algorithm-for-finding-a-location-inside-a-polygon-area
+    */
+    this.contains = coord => {
+        if (!this.polygon) {
+            console.error("Polygon.contains: Polygon is not initialized")
+        }
+        let next = polygon.length - 1;
+        let contains = false;
+        for (let cursor = 0; cursor < polygon.length; next = cursor++) {
+            let cursorLat = polygon[cursor][0], cursorLng = polygon[cursor][1];
+            let nextLat = polygon[next][0], nextLng = polygon[next][1];
+
+            let intersect = ((cursorLng > coord[1]) !== (nextLng > coord[1]))
+                && (coord[0] < (nextLat - cursorLat) * (coord[1] - cursorLng) / (nextLng - cursorLng) + cursorLat);
+            if (intersect) contains = true;
+        }
+        return contains;
+    }
+}
+
+function camelcase(value) {
+    let words = value.split(' ');
+    words = words.map(word => {
+        return word[0].toUpperCase() + word.substring(1);
+    });
+    return words.join('');
+}
+
 module.exports = {
     Directions: Directions,
     Coord: Coord,
@@ -275,5 +307,7 @@ module.exports = {
     NextBlock: NextBlock,
     CloneObject: CloneObject,
     Distance: distanceBetween,
-    Region: Region
+    Region: Region,
+    Polygon: Polygon,
+    Camelcase: camelcase
 };
