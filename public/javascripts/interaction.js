@@ -73,10 +73,14 @@ getZoneLayout().then(geoJSON => {
                 otherWeek.classList.remove('active');
             });
             week.classList.add('active');
+            document.querySelector('button#week_selection').innerHTML = week.innerHTML;
             if (currentMapLayer) mymap.removeLayer(currentMapLayer);
             currentMapLayer = weeklyGeoJSON[week.innerHTML];
             mymap.addLayer(currentMapLayer);
         });
         document.querySelector('#week_selection').classList.remove('disabled');
     }
+}).then(() => {
+//    TODO: create d3 graph of trend, bind graph to tooltip for each week geoJSON
+//    weeklyGeoJSON['weekName'].bindTooltip(graph)
 });
