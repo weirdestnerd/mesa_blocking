@@ -8,36 +8,24 @@ getZoneLayout().then(geoJSON => {
     mapconsole.message('Zone plotted!');
     return geoJSON;
 }).then(mapData => {
-   // handle week selection
+    console.log(mapData.features[0].properties['Week1.cs']);
+    // handle week selection
     let allWeeks = [].slice.call(document.querySelectorAll('a.dropdown-item'));
     for (let week of allWeeks) {
         //WARN: property headers are only 8 letters long due to dbf storage limit
         let weekName = week.innerHTML.slice(0, 8);
         let weekGeoJSON = L.geoJSON(mapData, {
-            //calculate density on layer creation
+            // TODO: create graph trend for each layer (instead of weekly density)
             onEachFeature: function (feature, layer) {
                 let customerCount = feature.properties.customer;
                 let weekCount = feature.properties[weekName];
-                let density;
-                //if there are customers and there are pick ups
-                if (customerCount && customerCount !== 0 && weekCount && weekCount !== 0) {
-                    density = ((weekCount / customerCount) * 100).toFixed(2);
-                }
-                //  if there are customers and no pick ups
-                else if (customerCount && customerCount !== 0 && (!weekCount || weekCount === 0)) {
-                    density = 0;
-                }
-                // if there are no customers and either there are pick ups or not
-                else {
-                    density = -1;
-                }
-                feature.properties[weekName + 'Density'] = density;
+                let density = feature.properties['%' + weekName.slice(0, 7)];
                 feature.properties['popUp'] = `Customers: ${customerCount}, Pick Ups: ${weekCount}, Density Percentage: ${density}%`;
                 layer.bindPopup(feature.properties.popUp);
             }
         });
         weekGeoJSON.setStyle(function (feature) {
-            let density = parseInt(feature.properties[weekName + 'Density']);
+            let density = parseInt(feature.properties['%' + weekName.slice(0, 7)]);
             let style = {fill: true, fillOpacity: 0.8};
             switch (true) {
                 case density < 0: style.fillOpacity = 0; break;
