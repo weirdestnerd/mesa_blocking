@@ -75,6 +75,45 @@ function assignWeekDataToZone(filename) {
     })
 }
 
+function validateFilenames(filenames, callback) {
+    // check if a string contains space
+    function containsSpace(filename) {
+        return filename.includes(' ');
+    }
+
+    function extractExtension(filename) {
+        let regex = /(.csv)|(.xlsx)$/g;
+        let foundExtension = filename.match(regex);
+        if (foundExtension === null) {
+            callback('File extension is expected in file path. if present, check for correctness.');
+        }
+        let type = foundExtension[0];
+        if (!['.csv', '.xlsx'].includes(type)) {
+            callback('Provided type is not supported.');
+        }
+        return type;
+    }
+
+    function isLong(filename) {
+        let extension = extractExtension(filename);
+        let name = filename.replace(extension, '');
+        return name.length > 8;
+    }
+
+    //TODO: reject if filename (w/o extension) is longer than 8 letters, for the sake of saving into dbf
+    if (filenames.some(isLong)) {
+        callback('Rename filenames that are longer than 8 letters')
+    }
+
+    if (filenames.some(containsSpace) ) {
+        filenames.forEach(filename => {
+            let oldPath = path.join(__dirname, '../data/weeks/' + filename);
+            let newPath = path.join(__dirname, '../data/weeks/' + camelcase(filename));
+            fs.renameSync(oldPath, newPath);
+        })
+    }
+}
+
 function preprocess() {
     return new Promise((resolve, reject) => {
         dataProvider.getGeoJSONFromFile()
@@ -84,21 +123,10 @@ function preprocess() {
             .then(() => {
                 fs.readdir(path.join(__dirname, '../data/weeks/'), (error, filenames) => {
                     if (error) reject(error);
-
-                    function containsSpace(filename) {
-                        return filename.includes(' ');
-                    }
-
-                    if (filenames.some(containsSpace)) {
-                        filenames.forEach(filename => {
-                            let oldPath = path.join(__dirname, '../data/weeks/' + filename);
-                            let newPath = path.join(__dirname, '../data/weeks/' + camelcase(filename));
-                            fs.renameSync(oldPath, newPath);
-                        })
-                    }
-
+                    validateFilenames(filenames, error => {
+                        if (error) reject(error)
+                    });
                     let apply = filenames.map(filename => {
-                        filename = camelcase(filename);
                         return assignWeekDataToZone(filename);
                     });
                     apply.unshift(dataProvider.getAllCustomers(['latitude', 'longitude']));
@@ -107,28 +135,32 @@ function preprocess() {
                         assignCustomerToZone();
                         return zoneGeoJSON;
                     })
-                        .then(() => {
-                            let allProperties = zoneGeoJSON.features.map(feature => {
-                                return feature.properties;
-                            });
-                            //WARN: dbf saves headers as long as 8 letters
-                            let buffer = dbf.structure(allProperties);
-                            let dbfPath = path.join(__dirname, '../data/GreenWasteRoutes.dbf');
-
-                            function toBuffer(ab) {
-                                let buffer = Buffer.alloc(ab.byteLength);
-                                let view = new Uint8Array(ab);
-                                for (let i = 0; i < buffer.length; ++i) {
-                                    buffer[i] = view[i];
-                                }
-                                return buffer;
-                            }
-                            fs.writeFileSync(dbfPath, toBuffer(buffer.buffer));
-                            return zoneGeoJSON;
-                    })
-                        .then(resolve)
                 })
             })
+            .then(() =>{
+            //    TODO: calculate density here
+            })
+            .then(() => {
+                //  Save properties to dbf file
+                let allProperties = zoneGeoJSON.features.map(feature => {
+                    return feature.properties;
+                });
+                //WARN: dbf saves headers as long as 8 letters
+                let buffer = dbf.structure(allProperties);
+                let dbfPath = path.join(__dirname, '../data/GreenWasteRoutes.dbf');
+
+                function toBuffer(ab) {
+                    let buffer = Buffer.alloc(ab.byteLength);
+                    let view = new Uint8Array(ab);
+                    for (let i = 0; i < buffer.length; ++i) {
+                        buffer[i] = view[i];
+                    }
+                    return buffer;
+                }
+                fs.writeFileSync(dbfPath, toBuffer(buffer.buffer));
+                return zoneGeoJSON;
+            })
+            .then(resolve)
             .catch(reject);
     });
 }
