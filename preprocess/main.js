@@ -23,6 +23,7 @@ const camelcase = require('../utils').Camelcase;
 
 let zoneGeoJSON;
 let allCustomers;
+let allWeeksFileNames;
 
 function findZoneIndexOf(coord) {
     let length = zoneGeoJSON.features.length;
@@ -100,18 +101,61 @@ function validateFilenames(filenames, callback) {
         return name.length > 8;
     }
 
-    //TODO: reject if filename (w/o extension) is longer than 8 letters, for the sake of saving into dbf
     if (filenames.some(isLong)) {
         callback('Rename filenames that are longer than 8 letters')
     }
 
-    if (filenames.some(containsSpace) ) {
-        filenames.forEach(filename => {
-            let oldPath = path.join(__dirname, '../data/weeks/' + filename);
-            let newPath = path.join(__dirname, '../data/weeks/' + camelcase(filename));
-            fs.renameSync(oldPath, newPath);
-        })
+    filenames.forEach(filename => {
+        let oldPath = path.join(__dirname, '../data/weeks/' + filename);
+        let newPath = path.join(__dirname, '../data/weeks/' + camelcase(filename));
+        fs.renameSync(oldPath, newPath);
+    });
+    return filenames;
+}
+
+function calculateZoneDensity() {
+    zoneGeoJSON.features.forEach(feature => {
+        let customerCount = feature.properties.customerCount;
+        for (let weekName of allWeeksFileNames) {
+            let weekCount = feature.properties[weekName];
+            let density;
+            //if there are customers and there are pick ups
+            if (customerCount && customerCount !== 0 && weekCount && weekCount !== 0) {
+                density = ((weekCount / customerCount) * 100).toFixed(2);
+            }
+            //  if there are customers and no pick ups
+            else if (customerCount && customerCount !== 0 && (!weekCount || weekCount === 0)) {
+                density = 0;
+            }
+            // if there are no customers and either there are pick ups or not
+            else {
+                density = -1;
+            }
+            feature.properties['%' + weekName] = density;
+        }
+    })
+}
+
+function savePropertiesInDBF() {
+    //  Save properties to dbf file
+    let allProperties = zoneGeoJSON.features.map(feature => {
+        return feature.properties;
+    });
+    //WARN: dbf saves headers as long as 8 letters
+    let buffer = dbf.structure(allProperties);
+    let dbfPath = path.join(__dirname, '../data/GreenWasteRoutes.dbf');
+
+    function toBuffer(ab) {
+        let buffer = Buffer.alloc(ab.byteLength);
+        let view = new Uint8Array(ab);
+        for (let i = 0; i < buffer.length; ++i) {
+            buffer[i] = view[i];
+        }
+        return buffer;
     }
+    //TODO: create new dbf file instead of using old one
+    fs.writeFileSync(dbfPath, toBuffer(buffer.buffer));
+    return zoneGeoJSON;
 }
 
 function preprocess() {
@@ -123,45 +167,30 @@ function preprocess() {
             .then(() => {
                 fs.readdir(path.join(__dirname, '../data/weeks/'), (error, filenames) => {
                     if (error) reject(error);
-                    validateFilenames(filenames, error => {
+                    filenames = validateFilenames(filenames, error => {
                         if (error) reject(error)
                     });
+                    allWeeksFileNames = filenames;
                     let apply = filenames.map(filename => {
                         return assignWeekDataToZone(filename);
                     });
                     apply.unshift(dataProvider.getAllCustomers(['latitude', 'longitude']));
-                    Promise.all(apply).then(values => {
-                        allCustomers = values[0];
-                        assignCustomerToZone();
-                        return zoneGeoJSON;
-                    })
+                    Promise.all(apply)
+                        .then(values => {
+                            allCustomers = values[0];
+                            assignCustomerToZone();
+                        })
+                        .then(() =>{
+                            calculateZoneDensity();
+                        })
+                        .then(() => {
+                            savePropertiesInDBF();
+                            return zoneGeoJSON;
+                        })
+                        .then(resolve)
+                        .catch(reject);
                 })
             })
-            .then(() =>{
-            //    TODO: calculate density here
-            })
-            .then(() => {
-                //  Save properties to dbf file
-                let allProperties = zoneGeoJSON.features.map(feature => {
-                    return feature.properties;
-                });
-                //WARN: dbf saves headers as long as 8 letters
-                let buffer = dbf.structure(allProperties);
-                let dbfPath = path.join(__dirname, '../data/GreenWasteRoutes.dbf');
-
-                function toBuffer(ab) {
-                    let buffer = Buffer.alloc(ab.byteLength);
-                    let view = new Uint8Array(ab);
-                    for (let i = 0; i < buffer.length; ++i) {
-                        buffer[i] = view[i];
-                    }
-                    return buffer;
-                }
-                fs.writeFileSync(dbfPath, toBuffer(buffer.buffer));
-                return zoneGeoJSON;
-            })
-            .then(resolve)
-            .catch(reject);
     });
 }
 
@@ -171,4 +200,5 @@ module.exports = {
 
 preprocess().then(geoJson => {
     console.log('Done!')
+    console.log(geoJson.features[0].properties);
 }).catch(console.error);
