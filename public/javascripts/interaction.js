@@ -1,6 +1,40 @@
 let weeklyGeoJSON = {};
 let currentMapLayer;
 
+function createGraph(zoneDensities) {
+//    TODO: create svg graph of the densities over the weeks
+    let svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    return svg;
+}
+
+function bindPopupTo(layer, feature, weekName) {
+    let customerCount = feature.properties.customer;
+    let weekCount = feature.properties[weekName];
+    let density = feature.properties['%' + weekName.slice(0, 7)];
+    feature.properties['popUp'] = `Customers: ${customerCount}, Pick Ups: ${weekCount}, Density Percentage: ${density}%`;
+    layer.bindPopup(feature.properties.popUp);
+}
+
+function bindTooltipTo(layer, feature, allWeeks) {
+    // get density for all weeks
+    let allWeekNames = allWeeks.map(week => `%${week.innerHTML.slice(0, 7)}`);
+    let zoneDensities = {};
+    allWeekNames.forEach(week => {
+        zoneDensities[week] = feature.properties[week]
+    });
+
+    function isInvalidDensity(density) {
+        return density < 0;
+    }
+
+    // don't draw graph if all densities for layer are invalid
+    if (!Object.values(zoneDensities).every(isInvalidDensity)){
+        let densityGraph = createGraph(zoneDensities);
+        console.log(densityGraph);
+        layer.bindTooltip(densityGraph);
+    }
+}
+
 getZoneLayout().then(geoJSON => {
     L.geoJSON(geoJSON, {
         style: {fill: false}
@@ -8,20 +42,15 @@ getZoneLayout().then(geoJSON => {
     mapconsole.message('Zone plotted!');
     return geoJSON;
 }).then(mapData => {
-    console.log(mapData.features[0].properties['Week1.cs']);
     // handle week selection
     let allWeeks = [].slice.call(document.querySelectorAll('a.dropdown-item'));
     for (let week of allWeeks) {
         //WARN: property headers are only 8 letters long due to dbf storage limit
         let weekName = week.innerHTML.slice(0, 8);
         let weekGeoJSON = L.geoJSON(mapData, {
-            // TODO: create graph trend for each layer (instead of weekly density)
             onEachFeature: function (feature, layer) {
-                let customerCount = feature.properties.customer;
-                let weekCount = feature.properties[weekName];
-                let density = feature.properties['%' + weekName.slice(0, 7)];
-                feature.properties['popUp'] = `Customers: ${customerCount}, Pick Ups: ${weekCount}, Density Percentage: ${density}%`;
-                layer.bindPopup(feature.properties.popUp);
+                bindPopupTo(layer, feature, weekName);
+                bindTooltipTo(layer, feature, allWeeks);
             }
         });
         weekGeoJSON.setStyle(function (feature) {
@@ -68,7 +97,5 @@ getZoneLayout().then(geoJSON => {
         });
         document.querySelector('#week_selection').classList.remove('disabled');
     }
-}).then(() => {
-//    TODO: create d3 graph of trend, bind graph to tooltip for each week geoJSON
-//    weeklyGeoJSON['weekName'].bindTooltip(graph)
-});
+    return mapData
+})
