@@ -1,9 +1,62 @@
 let weeklyGeoJSON = {};
 let currentMapLayer;
 
+// source: https://bl.ocks.org/gordlea/27370d1eea8464b04538e6d8ced39e89
 function createGraph(zoneDensities) {
-//    TODO: create svg graph of the densities over the weeks
+    let weekNames = Object.keys(zoneDensities);
+    let size = weekNames.length;
+    let maxDensity = Object.values(zoneDensities).reduce(
+        (accumulator, density) => Math.max(accumulator, density)
+    );
+
     let svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    let margin = {top: 50, right: 50, bottom: 50, left: 50};
+    let width = 200, height = 200;
+
+    // scales for the graph
+    let xScale = d3.scaleLinear()
+        .domain([0, size - 1]) // input
+        .range([0, width]); // output
+    let yScale = d3.scaleLinear()
+        .domain([0, maxDensity]) // input
+        .range([height, 0]); // output
+
+    // define width and height of svg
+    d3.select(svg).attr('width', width).attr('height', height)
+        .append("g")
+        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+    // add y axis to svg
+    d3.select(svg).append("g")
+        .attr("class", "y axis")
+        .call(d3.axisLeft(yScale)); // Create an axis component with d3.axisLeft
+
+    // line generator for graph
+    let line = d3.line()
+        .x(function(d, i) { return xScale(i); }) // set the x values for the line generator
+        .y(function(d) { return yScale(d.density); }) // set the y values for the line generator
+        .curve(d3.curveMonotoneX); // apply smoothing to the line
+
+    //  create data structure suitable for d3 in the form array of objects
+    let dataset = weekNames.map(name => {
+        return {'density': zoneDensities[name]}
+    });
+
+    // Append the path, bind the data, and call the line generator
+    d3.select(svg).append("path")
+        .datum(dataset) // 10. Binds data to the line
+        .attr("class", "d3-line") // Assign a class for styling
+        .attr("d", line); // 11. Calls the line generator
+
+    //  Append a circle to each datapoint
+    d3.select(svg).selectAll(".dot")
+        .data(dataset)
+        .enter().append("circle") // Uses the enter().append() method
+        .attr("class", "dot") // Assign a class for styling
+        .attr("cx", function(d, i) { return xScale(i) })
+        .attr("cy", function(d) { return yScale(d.density) })
+        .attr("r", 5);
+
     return svg;
 }
 
@@ -30,7 +83,6 @@ function bindTooltipTo(layer, feature, allWeeks) {
     // don't draw graph if all densities for layer are invalid
     if (!Object.values(zoneDensities).every(isInvalidDensity)){
         let densityGraph = createGraph(zoneDensities);
-        console.log(densityGraph);
         layer.bindTooltip(densityGraph);
     }
 }

@@ -27,3 +27,25 @@ p#console {
     padding-left: 5px;
     color: white;
 }
+
+.d3-line {
+    fill: none;
+    stroke: #e41a1c;
+    stroke-width: 3;
+}
+
+.overlay {
+    fill: none;
+    pointer-events: all;
+}
+
+/* Style the dots by assigning a fill and stroke */
+.dot {
+    fill: #377eb8;
+    stroke: #fff;
+}
+
+.focus circle {
+    fill: none;
+    stroke: steelblue;
+}
