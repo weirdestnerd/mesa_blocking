@@ -10,8 +10,8 @@ function createGraph(zoneDensities) {
     );
 
     let svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    let margin = {top: 50, right: 50, bottom: 50, left: 50};
-    let width = 200, height = 200;
+    let margin = {top: 25, right: 25, bottom: 25, left: 25};
+    let width = 100, height = 100;
 
     // scales for the graph
     let xScale = d3.scaleLinear()
@@ -30,32 +30,23 @@ function createGraph(zoneDensities) {
     d3.select(svg).append("g")
         .attr("class", "y axis")
         .call(d3.axisLeft(yScale)); // Create an axis component with d3.axisLeft
-
+    
     // line generator for graph
-    let line = d3.line()
-        .x(function(d, i) { return xScale(i); }) // set the x values for the line generator
-        .y(function(d) { return yScale(d.density); }) // set the y values for the line generator
-        .curve(d3.curveMonotoneX); // apply smoothing to the line
+    let area = d3.area()
+        .x((d, i) => xScale(i))
+        .y0(yScale(0))
+        .y1(d => yScale(d.density));
 
     //  create data structure suitable for d3 in the form array of objects
     let dataset = weekNames.map(name => {
         return {'density': zoneDensities[name]}
     });
 
-    // Append the path, bind the data, and call the line generator
-    d3.select(svg).append("path")
-        .datum(dataset) // 10. Binds data to the line
-        .attr("class", "d3-line") // Assign a class for styling
-        .attr("d", line); // 11. Calls the line generator
-
-    //  Append a circle to each datapoint
-    d3.select(svg).selectAll(".dot")
-        .data(dataset)
-        .enter().append("circle") // Uses the enter().append() method
-        .attr("class", "dot") // Assign a class for styling
-        .attr("cx", function(d, i) { return xScale(i) })
-        .attr("cy", function(d) { return yScale(d.density) })
-        .attr("r", 5);
+    // Append the path, bind the data, and call the area generator
+    d3.select(svg).append('path')
+        .datum(dataset) //binds data to the area
+        .attr('fill', 'steelblue') // fills the area with color
+        .attr('d', area); // calls area generator
 
     return svg;
 }
