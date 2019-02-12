@@ -27,3 +27,19 @@ p#console {
     padding-left: 5px;
     color: white;
 }
+div.spacing {
+    height: 1em;
+}
+div.density-legend-color {
+    width: 1em;
+    height: 1em;
+}
+div#legend .card .list-group .list-group-item {
+    padding-bottom: 0em;
+    padding-top: 0em;
+}
+
+div#legend .card .list-group .list-group-item p {
+    margin-bottom: 0;
+}
+
