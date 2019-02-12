@@ -10,50 +10,52 @@ function createGraph(zoneDensities) {
     );
 
     let svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    let margin = {top: 10, right: 25, bottom: 25, left: 25};
-    let width = 175, height = 125;
+    let margin = {top: 10, right: 10, bottom: 10, left: 25};
+    let width = 150, height = 125;
 
     // scales for the graph
     let xScale = d3.scaleLinear()
         .domain([0, size - 1]) // input
-        //uncomment when adding axis
-        // .range([margin.left, width + margin.right]); // output
-        .range([0, width]);
+        //uncomment next line when adding axis
+        .range([margin.left, width]); // output
+        // .range([0, width]);
     let yScale = d3.scaleLinear()
         .domain([0, maxDensity]) // input
-        //uncomment when adding y-axis
-        // .range([height + margin.top, 0]); // output
-        .range([height, 0]);
+        //uncomment next line when adding y-axis
+        .range([height, margin.top]); // output
+        // .range([height, 0]);
 
     // define width and height of svg
-    d3.select(svg).attr('width', width).attr('height', height)
+    d3.select(svg)
+        .attr('width', width + margin.right )
+        .attr('height', height + margin.top + margin.bottom)
         .append("g")
-        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+        // .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+        .attr("transform", `translate(${margin.left}, ${margin.top})`);
 
     //  create data structure suitable for d3 in the form array of objects
     let dataset = weekNames.map(name => {
         return {'density': zoneDensities[name]}
     });
 
-    //TODO: add ticks to y axis
+    let yAxis = d3.axisLeft(yScale)
+        .tickValues(Object.values(zoneDensities));
 
-    // let yAxis = d3.axisLeft(yScale)
-    //     .tickValues(Object.values(zoneDensities));
-    //
-    // let xAxis = d3.axisBottom(xScale)
+    let xAxis = d3.axisBottom(xScale)
+        .ticks(size);
         // .tickValues(Object.keys(zoneDensities));
 
     // add y axis to svg
-    // d3.select(svg).append("g")
-    //     .attr("class", "y axis")
-    //     .attr('transform', 'translate(' + margin.left + ', 5)')
-    //     .call(yAxis); // Create an axis component with d3.axisLeft
+    d3.select(svg).append("g")
+        .attr("class", "y axis")
+        .attr('transform', 'translate(' + margin.left + ', 0)')
+        .call(yAxis); // Create an axis component with d3.axisLeft
 
     // add x axis to svg
-    // d3.select(svg).append('g')
-    //     .attr('class', 'x axis')
-    //     .attr('transform', `translate(0, ${height - 10})`)
-    //     .call(xAxis);
+    d3.select(svg).append('g')
+        .attr('class', 'x axis')
+        .attr('transform', `translate(0, ${height})`)
+        .call(xAxis);
 
     // line generator for graph
     let area = d3.area()
