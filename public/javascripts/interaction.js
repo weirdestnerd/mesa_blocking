@@ -1,11 +1,25 @@
 let weeklyGeoJSON = {};
 let currentMapLayer;
+let densityColorGrades = {
+    0: 'gray',
+    10: '#ffffcc',
+    20: '#ffeda0',
+    30: '#fed976',
+    40: '#feb24c',
+    50: '#fd8d3c',
+    60: '#fc4e2a',
+    70: '#e31a1c',
+    80: '#e31423',
+    90: '#C6000C',
+    100: '#bd0026'
+};
 
 // source: https://bl.ocks.org/gordlea/27370d1eea8464b04538e6d8ced39e89
 function createGraph(zoneDensities) {
     let weekNames = Object.keys(zoneDensities);
     let size = weekNames.length;
-    let maxDensity = Object.values(zoneDensities).reduce(
+    let densities = Object.values(zoneDensities);
+    let maxDensity = densities.reduce(
         (accumulator, density) => Math.max(accumulator, density)
     );
 
@@ -19,6 +33,12 @@ function createGraph(zoneDensities) {
         //uncomment next line when adding axis
         .range([margin.left, width]); // output
         // .range([0, width]);
+
+    //TODO: create non-numerical scale for x-axis
+    // let xScale = d3.scaleOrdinal()
+    //     .domain(densities)
+    //     .range(weekNames)
+
     let yScale = d3.scaleLinear()
         .domain([0, maxDensity]) // input
         //uncomment next line when adding y-axis
@@ -39,7 +59,7 @@ function createGraph(zoneDensities) {
     });
 
     let yAxis = d3.axisLeft(yScale)
-        .tickValues(Object.values(zoneDensities));
+        .tickValues(densities);
 
     let xAxis = d3.axisBottom(xScale)
         .ticks(size);
@@ -100,67 +120,67 @@ function bindTooltipTo(layer, feature, allWeeks) {
     }
 }
 
-getZoneLayout().then(geoJSON => {
-    L.geoJSON(geoJSON, {
-        style: {fill: false}
-    }).addTo(mymap);
-    mapconsole.message('Zone plotted!');
-    return geoJSON;
-}).then(mapData => {
-    // handle week selection
-    let allWeeks = [].slice.call(document.querySelectorAll('a.dropdown-item'));
-    for (let week of allWeeks) {
-        //WARN: property headers are only 8 letters long due to dbf storage limit
-        let weekName = week.innerHTML.slice(0, 8);
-        let weekGeoJSON = L.geoJSON(mapData, {
-            onEachFeature: function (feature, layer) {
-                bindPopupTo(layer, feature, weekName);
-                bindTooltipTo(layer, feature, allWeeks);
-            }
+// get the color for the range that density falls into
+function getColor(density) {
+    let gradeKeys = Object.keys(densityColorGrades);
+    // should be sorted already, but just in case the object is tampered re-sort
+    gradeKeys.sort((first, second) => first - second);
+    //  find the first key that's greater than the density
+    let key = gradeKeys.find(gradeKey => {
+        return gradeKey >= density
+    });
+
+    // key is undefined if density is greater than 100
+    return key ? densityColorGrades[key] : '#800026';
+}
+
+function addSelectionListenerToWeek(week, allWeeks) {
+    week.addEventListener('click', () => {
+        allWeeks.forEach(otherWeek => {
+            otherWeek.classList.remove('active');
         });
-        weekGeoJSON.setStyle(function (feature) {
-            let density = parseInt(feature.properties['%' + weekName.slice(0, 7)]);
-            let style = {fill: true, fillOpacity: 0.8};
-            switch (true) {
-                case density < 0: style.fillOpacity = 0; break;
-                case density === 0: style.fillColor = 'gray'; break;
-                case density < 10:
-                    style.fillColor =  '#ffffcc'; break;
-                case (density >= 10) && (density < 20):
-                    style.fillColor =  '#ffeda0'; break;
-                case (density >= 20) && (density < 30):
-                    style.fillColor =  '#fed976'; break;
-                case (density >= 30) && (density < 40):
-                    style.fillColor =  '#feb24c'; break;
-                case (density >= 40) && (density < 50):
-                    style.fillColor =  '#fd8d3c'; break;
-                case (density >= 50) && (density < 60):
-                    style.fillColor =  '#fc4e2a'; break;
-                case (density >= 60) && (density < 70):
-                    style.fillColor =  '#e31a1c'; break;
-                case (density >= 70 && density < 80):
-                    style.fillColor =  '#e31423'; break;
-                case (density >= 80 && density < 90):
-                    style.fillColor =  '#C6000C'; break;
-                case (density >= 90 && density < 100):
-                    style.fillColor =  '#bd0026'; break;
-                case (density >= 100):
-                    style.fillColor =  '#800026'; break;
-            }
-            return style;
-        });
-        weeklyGeoJSON[week.innerHTML] = weekGeoJSON;
-        week.addEventListener('click', () => {
-            allWeeks.forEach(otherWeek => {
-                otherWeek.classList.remove('active');
-            });
-            week.classList.add('active');
-            document.querySelector('button#week_selection').innerHTML = week.innerHTML;
-            if (currentMapLayer) mymap.removeLayer(currentMapLayer);
-            currentMapLayer = weeklyGeoJSON[week.innerHTML];
-            mymap.addLayer(currentMapLayer);
-        });
-        document.querySelector('#week_selection').classList.remove('disabled');
-    }
-    return mapData
-})
+        week.classList.add('active');
+        document.querySelector('button#week_selection').innerHTML = week.innerHTML;
+        if (currentMapLayer) mymap.removeLayer(currentMapLayer);
+        currentMapLayer = weeklyGeoJSON[week.innerHTML];
+        mymap.addLayer(currentMapLayer);
+    });
+    document.querySelector('#week_selection').classList.remove('disabled');
+}
+
+function createGeoJSONForWeek(week, allWeeks, mapData,) {
+    //WARN: property headers are only 8 letters long due to dbf storage limit
+    let weekName = week.innerHTML.slice(0, 8);
+    let weekGeoJSON = L.geoJSON(mapData, {
+        onEachFeature: function (feature, layer) {
+            bindPopupTo(layer, feature, weekName);
+            bindTooltipTo(layer, feature, allWeeks);
+        }
+    });
+    weekGeoJSON.setStyle(function (feature) {
+        let density = parseInt(feature.properties['%' + weekName.slice(0, 7)]);
+        let style = {fill: true, fillOpacity: 0.8};
+        if (density < 0) style.fillOpacity = 0;
+        else style.fillColor = getColor(density);
+        return style;
+    });
+    weeklyGeoJSON[week.innerHTML] = weekGeoJSON;
+}
+
+(function loadMapLayout() {
+    getZoneLayout().then(geoJSON => {
+        L.geoJSON(geoJSON, {
+            style: {fill: false}
+        }).addTo(mymap);
+        mapconsole.message('Zone plotted!');
+        return geoJSON;
+    }).then(mapData => {
+        // handle week selection
+        let allWeeks = [].slice.call(document.querySelectorAll('a.dropdown-item'));
+        for (let week of allWeeks) {
+            createGeoJSONForWeek(week, allWeeks, mapData);
+            addSelectionListenerToWeek(week, allWeeks)
+        }
+        return mapData
+    })
+}());

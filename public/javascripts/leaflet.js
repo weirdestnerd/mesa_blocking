@@ -15,19 +15,3 @@ let MesaCitySWCorner = L.latLng(33.282113, -111.584269);
 let bounds = L.latLngBounds(MesaCityNECorner, MesaCitySWCorner);
 mymap.setMaxBounds(bounds);
 
-function renderShapeFile(shapefile) {
-    let shpfile = new L.Shapefile(shapefile);
-    shpfile.addTo(mymap);
-}
-
-//draw city outline
-// let xmlHttpReq = new XMLHttpRequest();
-// xmlHttpReq.responseType = 'arraybuffer';
-// xmlHttpReq.open('GET', '/shapefile/MesaCityShp.zip');
-//
-// xmlHttpReq.onreadystatechange = () => {
-//     if (xmlHttpReq.readyState === 4 && xmlHttpReq.status === 200) {
-//         renderShapeFile(xmlHttpReq.response);
-//     }
-// };
-// xmlHttpReq.send();
