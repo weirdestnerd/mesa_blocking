@@ -134,6 +134,27 @@ function getColor(density) {
     return key ? densityColorGrades[key] : '#800026';
 }
 
+function createMapDensityLegend() {
+    let legend = L.control({position: 'bottomright'});
+
+    legend.onAdd = function (map) {
+
+        let div = L.DomUtil.create('div', 'info legend')
+        let gradeKeys = Object.keys(densityColorGrades);
+        // should be sorted already, but just in case the object is tampered re-sort
+        gradeKeys.sort((first, second) => first - second);
+
+        // loop through our density intervals and generate a label with a colored square for each interval
+        gradeKeys.forEach((gradeKey, index) => {
+            div.innerHTML += `<i style="background: ${densityColorGrades[gradeKey]}"></i> ${gradeKey === 0 ? gradeKey : gradeKey + (gradeKeys[index + 1] ? '&ndash;' + gradeKeys[index + 1] + '<br>' : '+')}`
+        });
+        
+        return div;
+    };
+
+    legend.addTo(mymap);
+}
+
 function addSelectionListenerToWeek(week, allWeeks) {
     week.addEventListener('click', () => {
         allWeeks.forEach(otherWeek => {
@@ -181,6 +202,7 @@ function createGeoJSONForWeek(week, allWeeks, mapData,) {
             createGeoJSONForWeek(week, allWeeks, mapData);
             addSelectionListenerToWeek(week, allWeeks)
         }
+        createMapDensityLegend();
         return mapData
     })
 }());
