@@ -153,7 +153,7 @@ function savePropertiesInDBF() {
         }
         return buffer;
     }
-    //TODO: create new dbf file instead of using old one
+
     fs.writeFileSync(dbfPath, toBuffer(buffer.buffer));
     return zoneGeoJSON;
 }
@@ -199,6 +199,6 @@ module.exports = {
 };
 
 preprocess().then(geoJson => {
-    console.log('Done!')
+    console.log('Done!');
     console.log(geoJson.features[0].properties);
 }).catch(console.error);

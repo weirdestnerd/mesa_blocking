@@ -17,7 +17,6 @@ let densityColorGrades = {
 // source: https://bl.ocks.org/gordlea/27370d1eea8464b04538e6d8ced39e89
 function createGraph(zoneDensities) {
     let weekNames = Object.keys(zoneDensities);
-    let size = weekNames.length;
     let densities = Object.values(zoneDensities);
     let maxDensity = densities.reduce(
         (accumulator, density) => Math.max(accumulator, density)
@@ -27,23 +26,13 @@ function createGraph(zoneDensities) {
     let margin = {top: 10, right: 10, bottom: 10, left: 25};
     let width = 200, height = 125;
 
-    // scales for the graph
-    // let xScale = d3.scaleLinear()
-    //     .domain([0, size - 1]) // input
-    //     // uncomment next line when adding axis
-    //     .range([margin.left, width]); // output
-        // .range([0, width]);
-
-    //TODO: create non-numerical scale for x-axis
     let xScale = d3.scalePoint()
         .domain(weekNames)
         .range([margin.left, width]);
 
     let yScale = d3.scaleLinear()
-        .domain([0, maxDensity]) // input
-        //uncomment next line when adding y-axis
-        .range([height, margin.top]); // output
-        // .range([height, 0]);
+        .domain([0, maxDensity])
+        .range([height, margin.top]);
 
     // define width and height of svg
     d3.select(svg)
@@ -61,9 +50,7 @@ function createGraph(zoneDensities) {
     let yAxis = d3.axisLeft(yScale)
         .tickValues(densities);
 
-    let xAxis = d3.axisBottom(xScale)
-        // .ticks(size);
-        // .tickValues(Object.keys(zoneDensities));
+    let xAxis = d3.axisBottom(xScale);
 
     // add y axis to svg
     d3.select(svg).append("g")
