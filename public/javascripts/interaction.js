@@ -25,19 +25,19 @@ function createGraph(zoneDensities) {
 
     let svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     let margin = {top: 10, right: 10, bottom: 10, left: 25};
-    let width = 150, height = 125;
+    let width = 200, height = 125;
 
     // scales for the graph
-    let xScale = d3.scaleLinear()
-        .domain([0, size - 1]) // input
-        //uncomment next line when adding axis
-        .range([margin.left, width]); // output
+    // let xScale = d3.scaleLinear()
+    //     .domain([0, size - 1]) // input
+    //     // uncomment next line when adding axis
+    //     .range([margin.left, width]); // output
         // .range([0, width]);
 
     //TODO: create non-numerical scale for x-axis
-    // let xScale = d3.scaleOrdinal()
-    //     .domain(densities)
-    //     .range(weekNames)
+    let xScale = d3.scalePoint()
+        .domain(weekNames)
+        .range([margin.left, width]);
 
     let yScale = d3.scaleLinear()
         .domain([0, maxDensity]) // input
@@ -62,7 +62,7 @@ function createGraph(zoneDensities) {
         .tickValues(densities);
 
     let xAxis = d3.axisBottom(xScale)
-        .ticks(size);
+        // .ticks(size);
         // .tickValues(Object.keys(zoneDensities));
 
     // add y axis to svg
@@ -79,7 +79,7 @@ function createGraph(zoneDensities) {
 
     // line generator for graph
     let area = d3.area()
-        .x((d, i) => xScale(i))
+        .x((d, i) => xScale(weekNames[i]))
         .y0(yScale(0))
         .y1(d => yScale(d.density))
         .curve(d3.curveBasis);
@@ -106,7 +106,10 @@ function bindTooltipTo(layer, feature, allWeeks) {
     let allWeekNames = allWeeks.map(week => `%${week.innerHTML.slice(0, 7)}`);
     let zoneDensities = {};
     allWeekNames.forEach(week => {
-        zoneDensities[week] = feature.properties[week]
+        if (feature.properties[week] >= 0){
+            let key = week.slice(1).replace(/\.([a-zA-z0-9])/, '');
+            zoneDensities[key] = feature.properties[week]
+        }
     });
 
     function isInvalidDensity(density) {
