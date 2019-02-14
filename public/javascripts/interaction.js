@@ -139,14 +139,24 @@ function createMapDensityLegend() {
 
     legend.onAdd = function (map) {
 
-        let div = L.DomUtil.create('div', 'info legend')
+        let div = L.DomUtil.create('div', 'info legend');
         let gradeKeys = Object.keys(densityColorGrades);
         // should be sorted already, but just in case the object is tampered re-sort
         gradeKeys.sort((first, second) => first - second);
 
         // loop through our density intervals and generate a label with a colored square for each interval
         gradeKeys.forEach((gradeKey, index) => {
-            div.innerHTML += `<i style="background: ${densityColorGrades[gradeKey]}"></i> ${gradeKey === 0 ? gradeKey : gradeKey + (gradeKeys[index + 1] ? '&ndash;' + gradeKeys[index + 1] + '<br>' : '+')}`
+            let key = parseInt(gradeKey);
+            // square block that shows color
+            let singleLegend = `<i style="background: ${densityColorGrades[gradeKey]}"></i>`;
+
+            if (key === 0) singleLegend += `${key}<br>`;
+            // if there's an upper bound for current grade key, i.e. key = 40 & key 50 exists
+            else if (key > 0 && (index + 1 < gradeKeys.length))
+                singleLegend += `${gradeKeys[index - 1]} - ${key}<br>`;
+            else
+                singleLegend += `${key}+`;
+            div.innerHTML += singleLegend;
         });
         
         return div;
