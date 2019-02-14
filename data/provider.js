@@ -12,6 +12,7 @@ const path = require('path');
 let zoneGeoJSON;
 let coordProjection;
 let shpFilePath = path.join(__dirname, './GreenWasteRoutes.shp');
+let originalDbfFilePath = path.join(__dirname, './GreenWasteRoutesOriginal.dbf');
 let dbfFilePath = path.join(__dirname, './GreenWasteRoutes.dbf');
 
 function getExcelData(path, schema) {
@@ -211,10 +212,11 @@ function transformFeatureCoordinates(feature) {
     return feature;
 }
 
-function getZone() {
+function getZone(preprocessed) {
     return new Promise((resolve, reject) => {
         if (zoneGeoJSON) resolve(zoneGeoJSON);
-        shapefile.read(shpFilePath, dbfFilePath)
+        let filePath = preprocessed ? dbfFilePath : originalDbfFilePath;
+        shapefile.read(shpFilePath, filePath)
             .then(geoJSON => {
                 zoneGeoJSON = geoJSON;
                 resolve(zoneGeoJSON);
@@ -226,10 +228,10 @@ function getZone() {
     });
 }
 
-function readGeoJSON() {
+function readGeoJSON(preprocessed) {
     return new Promise(resolve => {
         if (zoneGeoJSON) resolve(zoneGeoJSON);
-        Promise.all([getProjection(), getZone()])
+        Promise.all([getProjection(), getZone(preprocessed)])
             .then(() => {
                 zoneGeoJSON.features = zoneGeoJSON.features.map(feature => {
                     return transformFeatureCoordinates(feature);

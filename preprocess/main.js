@@ -23,6 +23,7 @@ const camelcase = require('../utils').Camelcase;
 
 let zoneGeoJSON;
 let allCustomers;
+let allWeeksFileNames;
 
 function findZoneIndexOf(coord) {
     let length = zoneGeoJSON.features.length;
@@ -75,6 +76,88 @@ function assignWeekDataToZone(filename) {
     })
 }
 
+function validateFilenames(filenames, callback) {
+    // check if a string contains space
+    function containsSpace(filename) {
+        return filename.includes(' ');
+    }
+
+    function extractExtension(filename) {
+        let regex = /(.csv)|(.xlsx)$/g;
+        let foundExtension = filename.match(regex);
+        if (foundExtension === null) {
+            callback('File extension is expected in file path. if present, check for correctness.');
+        }
+        let type = foundExtension[0];
+        if (!['.csv', '.xlsx'].includes(type)) {
+            callback('Provided type is not supported.');
+        }
+        return type;
+    }
+
+    function isLong(filename) {
+        let extension = extractExtension(filename);
+        let name = filename.replace(extension, '');
+        return name.length > 8;
+    }
+
+    if (filenames.some(isLong)) {
+        callback('Rename filenames that are longer than 8 letters')
+    }
+
+    filenames.forEach(filename => {
+        let oldPath = path.join(__dirname, '../data/weeks/' + filename);
+        let newPath = path.join(__dirname, '../data/weeks/' + camelcase(filename));
+        fs.renameSync(oldPath, newPath);
+    });
+    return filenames;
+}
+
+function calculateZoneDensity() {
+    zoneGeoJSON.features.forEach(feature => {
+        let customerCount = feature.properties.customerCount;
+        for (let weekName of allWeeksFileNames) {
+            let weekCount = feature.properties[weekName];
+            let density;
+            //if there are customers and there are pick ups
+            if (customerCount && customerCount !== 0 && weekCount && weekCount !== 0) {
+                density = ((weekCount / customerCount) * 100).toFixed(2);
+            }
+            //  if there are customers and no pick ups
+            else if (customerCount && customerCount !== 0 && (!weekCount || weekCount === 0)) {
+                density = 0;
+            }
+            // if there are no customers and either there are pick ups or not
+            else {
+                density = -1;
+            }
+            feature.properties['%' + weekName] = density;
+        }
+    })
+}
+
+function savePropertiesInDBF() {
+    //  Save properties to dbf file
+    let allProperties = zoneGeoJSON.features.map(feature => {
+        return feature.properties;
+    });
+    //WARN: dbf saves headers as long as 8 letters
+    let buffer = dbf.structure(allProperties);
+    let dbfPath = path.join(__dirname, '../data/GreenWasteRoutes.dbf');
+
+    function toBuffer(ab) {
+        let buffer = Buffer.alloc(ab.byteLength);
+        let view = new Uint8Array(ab);
+        for (let i = 0; i < buffer.length; ++i) {
+            buffer[i] = view[i];
+        }
+        return buffer;
+    }
+
+    fs.writeFileSync(dbfPath, toBuffer(buffer.buffer));
+    return zoneGeoJSON;
+}
+
 function preprocess() {
     return new Promise((resolve, reject) => {
         dataProvider.getGeoJSONFromFile()
@@ -84,52 +167,30 @@ function preprocess() {
             .then(() => {
                 fs.readdir(path.join(__dirname, '../data/weeks/'), (error, filenames) => {
                     if (error) reject(error);
-
-                    function containsSpace(filename) {
-                        return filename.includes(' ');
-                    }
-
-                    if (filenames.some(containsSpace)) {
-                        filenames.forEach(filename => {
-                            let oldPath = path.join(__dirname, '../data/weeks/' + filename);
-                            let newPath = path.join(__dirname, '../data/weeks/' + camelcase(filename));
-                            fs.renameSync(oldPath, newPath);
-                        })
-                    }
-
+                    filenames = validateFilenames(filenames, error => {
+                        if (error) reject(error)
+                    });
+                    allWeeksFileNames = filenames;
                     let apply = filenames.map(filename => {
-                        filename = camelcase(filename);
                         return assignWeekDataToZone(filename);
                     });
                     apply.unshift(dataProvider.getAllCustomers(['latitude', 'longitude']));
-                    Promise.all(apply).then(values => {
-                        allCustomers = values[0];
-                        assignCustomerToZone();
-                        return zoneGeoJSON;
-                    })
+                    Promise.all(apply)
+                        .then(values => {
+                            allCustomers = values[0];
+                            assignCustomerToZone();
+                        })
+                        .then(() =>{
+                            calculateZoneDensity();
+                        })
                         .then(() => {
-                            let allProperties = zoneGeoJSON.features.map(feature => {
-                                return feature.properties;
-                            });
-                            //WARN: dbf saves headers as long as 8 letters
-                            let buffer = dbf.structure(allProperties);
-                            let dbfPath = path.join(__dirname, '../data/GreenWasteRoutes.dbf');
-
-                            function toBuffer(ab) {
-                                let buffer = Buffer.alloc(ab.byteLength);
-                                let view = new Uint8Array(ab);
-                                for (let i = 0; i < buffer.length; ++i) {
-                                    buffer[i] = view[i];
-                                }
-                                return buffer;
-                            }
-                            fs.writeFileSync(dbfPath, toBuffer(buffer.buffer));
+                            savePropertiesInDBF();
                             return zoneGeoJSON;
-                    })
+                        })
                         .then(resolve)
+                        .catch(reject);
                 })
             })
-            .catch(reject);
     });
 }
 
@@ -138,5 +199,6 @@ module.exports = {
 };
 
 preprocess().then(geoJson => {
-    console.log('Done!')
+    console.log('Done!');
+    console.log(geoJson.features[0].properties);
 }).catch(console.error);
