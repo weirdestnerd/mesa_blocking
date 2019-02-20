@@ -1,19 +1,6 @@
-// calculate density for each zone
-
-/*
-    feature: {
-        properties: {
-            customers: count,
-            weeks: {
-             week n: {
-                    count:
-                    density:
-                }
-            }
-        }
-    }
+/**
+ * Module dependencies
  */
-
 const dataProvider = require('../data/provider');
 const Polygon = require('../utils').Polygon;
 const fs = require('fs');
@@ -21,22 +8,30 @@ const path = require('path');
 const dbf = require('dbf');
 const camelcase = require('../utils').Camelcase;
 
+/**
+ * Global dependencies
+ */
 let zoneGeoJSON;
 let allCustomers;
 let allWeeksFileNames;
 
+/**
+ * Finds the index of the zone that coordinate belongs to
+ * @param {Coord} coord
+ * @returns {number}
+ */
 function findZoneIndexOf(coord) {
-    let length = zoneGeoJSON.features.length;
-    let index = -1, continueFind = true;
-    while (continueFind && index < length - 1) {
-        index++;
-        let polygon = new Polygon(zoneGeoJSON.features[index].geometry.coordinates[0]);
+    return zoneGeoJSON.features.findIndex(feature => {
+        let polygon = new Polygon(feature.geometry.coordinates[0]);
+        // coordinates are stored in the zone (zoneGeoJSOn) as [lng, lat], so to compare accurately we need to reverse the provided coordinate
         let reversedCoord = [coord[1], coord[0]];
-        continueFind = !polygon.contains(reversedCoord);
-    }
-    return continueFind ? -1 : index;
+        return polygon.contains(reversedCoord);
+    });
 }
 
+/**
+ *  Assign customer to zone by find the zone that customer's lat & lng belongs to.
+ */
 function assignCustomerToZone() {
     for (let customer of allCustomers) {
         if (customer && customer.hasOwnProperty('LATITUDE') && customer.hasOwnProperty('LONGITUDE')) {
@@ -52,6 +47,11 @@ function assignCustomerToZone() {
     }
 }
 
+/**
+ * Read from file the weekly data and assign each customer for that week to their respective zone.
+ * @param {string} filename
+ * @returns {Promise<any>}
+ */
 function assignWeekDataToZone(filename) {
     return new Promise((resolve, reject) => {
         let filePath = path.join(__dirname, '../data/weeks/' + filename);
@@ -76,12 +76,13 @@ function assignWeekDataToZone(filename) {
     })
 }
 
+/**
+ * Validates filenames and rename filenames if necessary
+ * @param {string[]} filenames
+ * @param callback
+ * @returns {*}
+ */
 function validateFilenames(filenames, callback) {
-    // check if a string contains space
-    function containsSpace(filename) {
-        return filename.includes(' ');
-    }
-
     function extractExtension(filename) {
         let regex = /(.csv)|(.xlsx)$/g;
         let foundExtension = filename.match(regex);
@@ -113,13 +114,16 @@ function validateFilenames(filenames, callback) {
     return filenames;
 }
 
+/**
+ * Calculate density for each zone
+ */
 function calculateZoneDensity() {
     zoneGeoJSON.features.forEach(feature => {
         let customerCount = feature.properties.customerCount;
         for (let weekName of allWeeksFileNames) {
             let weekCount = feature.properties[weekName];
             let density;
-            //if there are customers and there are pick ups
+            //  if there are customers and there are pick ups
             if (customerCount && customerCount !== 0 && weekCount && weekCount !== 0) {
                 density = ((weekCount / customerCount) * 100).toFixed(2);
             }
@@ -127,7 +131,7 @@ function calculateZoneDensity() {
             else if (customerCount && customerCount !== 0 && (!weekCount || weekCount === 0)) {
                 density = 0;
             }
-            // if there are no customers and either there are pick ups or not
+            //  if there are no customers and either there are pick ups or not
             else {
                 density = -1;
             }
@@ -136,8 +140,11 @@ function calculateZoneDensity() {
     })
 }
 
+/**
+ * Save geoJSON properties in .dbf file
+ * @returns {*}
+ */
 function savePropertiesInDBF() {
-    //  Save properties to dbf file
     let allProperties = zoneGeoJSON.features.map(feature => {
         return feature.properties;
     });
@@ -171,10 +178,14 @@ function preprocess() {
                         if (error) reject(error)
                     });
                     allWeeksFileNames = filenames;
+                    //  apply holds all the promises to be triggered
                     let apply = filenames.map(filename => {
                         return assignWeekDataToZone(filename);
                     });
+
+                    //  get customers first before weekly data
                     apply.unshift(dataProvider.getAllCustomers(['latitude', 'longitude']));
+
                     Promise.all(apply)
                         .then(values => {
                             allCustomers = values[0];
