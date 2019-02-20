@@ -4,9 +4,9 @@ const fs = require('fs');
 const path = require('path');
 const camelcase = require('../utils').Camelcase;
 
-/* GET home page. */
+/* GET /map page. */
 router.get('/', function(req, res, next) {
-    //count number of files in data/week
+    //  read filenames in data/week
     fs.readdir(path.join(__dirname, '../data/weeks'), (error, files) => {
         if (error) {
             console.error(error);

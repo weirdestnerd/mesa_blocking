@@ -1,11 +1,28 @@
 const Enum = require('enum');
 
+/**
+ *  Variables definition
+ */
 const CityBlockSize = .05;
 const earthRadius = 3960.0;
 const degToRad = Math.PI / 180.0;
 const radToDeg = 180.0 / Math.PI;
+
+/**
+ * @type {Enum}
+ */
 const Directions = new Enum(['North', 'South', 'East', 'West', 'NE', 'NW', 'SE', 'SW'], {freez: true});
 
+/**
+ * @typedef {Object} Coord
+ * @property {number} lat
+ * @property {number} lng
+ * /
+
+ /**
+ * @param {number} [lat=null]
+ * @param {number} [lng=null]
+ */
 function Coord(lat = null, lng = null) {
     this.lat = lat;
     this.lng = lng;
@@ -22,6 +39,18 @@ function Coord(lat = null, lng = null) {
     }
 }
 
+/**
+ * @typedef {Object} Grid
+ * @param {Coord} topLeft
+ * @param {Coord} topRight
+ * @param {Coord} bottomLeft
+ * @param {Coord} bottomRight
+ */
+
+/**
+ *
+ * @param {string} [name]
+ */
 function Grid(name) {
     if (!name) {
         console.warn(`Creating Grid without 'name' identifier.`);
@@ -34,11 +63,13 @@ function Grid(name) {
     this.customers = 0;
     this.pickups = 0;
 
+    /**
+     * Populates the grid's attributes given at least one of the corners
+     */
     this.create = () => {
     //    if all corners are null, throw error
-        if (this.isEmpty()) {
-            console.error("At least one corner is needed to construct Grid");
-            return;
+        if (this.isUninitialized()) {
+            return console.error("At least one corner is needed to construct Grid");
         }
     //    if topRight, then calculate topLeft & bottomRight
         if (!this.topRight.isNull()) {
@@ -62,7 +93,7 @@ function Grid(name) {
         }
     };
 
-    this.isEmpty = () => {
+    this.isUninitialized = () => {
         let allCorners = [this.topLeft, this.topRight, this.bottomLeft, this.bottomRight];
 
         function isCornerNull(corner) {
@@ -89,28 +120,35 @@ function Grid(name) {
 
     this.contains = location => {
         if (!location) {
-            console.error('Provide location to check.');
-            return;
+            return console.error('Provide location to check.');
         }
         if (!location instanceof Coord) {
-            console.error('Grid.contains: Type of location must be utils/Coord');
-            return;
+            return console.error('Grid.contains: Type of location must be utils/Coord');
         }
-        function isBoundedByTopAndBottom(grid) {
-            return grid.topLeft.lat >= location.lat && grid.bottomLeft.lat <= location.lat;
-        }
-
-        function isBoundedByLeftAndRight(grid) {
-            return grid.topRight.lng >= location.lng && grid.topLeft.lng <= location.lng;
+        function isBoundedByTopAndBottom() {
+            return this.grid.topLeft.lat >= location.lat && this.grid.bottomLeft.lat <= location.lat;
         }
 
-        return isBoundedByTopAndBottom(this) && isBoundedByLeftAndRight(this);
+        function isBoundedByLeftAndRight() {
+            return this.grid.topRight.lng >= location.lng && this.grid.topLeft.lng <= location.lng;
+        }
+
+        return isBoundedByTopAndBottom() && isBoundedByLeftAndRight();
     };
 
     this.density = () => {
-        if (this.customers !== 0)
-            return this.pickups / this.customers;
-        return this.pickups;
+        //  if there are customers and there are pick ups
+        if (this.customers && this.customers !== 0 && this.pickups && this.pickups !== 0) {
+            return ((this.pickups / this.customers) * 100).toFixed(2);
+        }
+        //  if there are customers and no pick ups
+        else if (this.customers && this.customers !== 0 && (!this.pickups || this.pickups === 0)) {
+            return 0;
+        }
+        //  if there are no customers and either there are pick ups or not
+        else {
+            return -1;
+        }
     };
 
     this.log = () => {
@@ -120,18 +158,21 @@ function Grid(name) {
     };
 }
 
+/**
+ * Calculates the next latitude by CityBlockSize distance in the given direction keeping longitude the same
+ * @param {Coord} coord
+ * @param {Enum} direction
+ * @returns {Coord}
+ */
 function calculateLatByDistance(coord, direction) {
     if (!(coord instanceof Coord)) {
-        console.error("calculateLatByDistance: Type of coord must be utils/Coord");
-        return
+        return console.error("calculateLatByDistance: Type of coord must be utils/Coord");
     }
     if (!Directions.isDefined(direction)) {
-        console.error("calculateLatByDistance: Type of direction must be utils/Direction");
-        return
+        return console.error("calculateLatByDistance: Type of direction must be utils/Direction");
     }
     if (direction !== Directions.North && direction !== Directions.South) {
-        console.error("calculateLatByDistance: Direction must be North or South");
-        return
+        return console.error("calculateLatByDistance: Direction must be North or South");
     }
 
     function nextLat() {
@@ -144,18 +185,21 @@ function calculateLatByDistance(coord, direction) {
     return result;
 }
 
+/**
+ * Calculates the next longitude by CityBlockSize distance in the given direction keeping latitude the same
+ * @param {Coord} coord
+ * @param {Enum} direction
+ * @returns {Coord}
+ */
 function calculateLngByDistance(coord, direction) {
     if (!(coord instanceof Coord)) {
-        console.error("calculateLngByDistance: Type of coord must be utils/Coord");
-        return
+        return console.error("calculateLngByDistance: Type of coord must be utils/Coord");
     }
     if (!Directions.isDefined(direction)) {
-        console.error("calculateLngByDistance: Type of direction must be utils/Direction");
-        return
+        return console.error("calculateLngByDistance: Type of direction must be utils/Direction");
     }
     if (direction !== Directions.West && direction !== Directions.East) {
-        console.error("calculateLngByDistance: Direction must be North or South");
-        return
+        return console.error("calculateLngByDistance: Direction must be North or South");
     }
 
     function nextLng() {
@@ -165,22 +209,25 @@ function calculateLngByDistance(coord, direction) {
 
     let result = new Coord(coord.lat);
     result.lng = direction === Directions.East ? coord.lng + nextLng() : coord.lng - nextLng();
-    // direction === Directions.East ? coord.lng += nextLng() : coord.lng -= nextLng();
     return result;
 }
 
+/**
+ * Calculates the next city block's latitude and longitude by CityBlockSize distance in the given direction
+ * @param {Coord} coord
+ * @param {Enum} direction
+ * @returns {Coord}
+ * @constructor
+ */
 function NextBlock(coord, direction) {
     if (!(coord instanceof Coord)) {
-        console.error("NextBlock: Type of coord must be utils/Coord");
-        return
+        return console.error("NextBlock: Type of coord must be utils/Coord");
     }
     if (!Directions.isDefined(direction)) {
-        console.error("NextBlock: Type of direction must be utils/Direction");
-        return
+        return console.error("NextBlock: Type of direction must be utils/Direction");
     }
     if (direction !== Directions.NE && direction !== Directions.NW && direction !== Directions.SE && direction !== Directions.SW) {
-        console.error("NextBlock: Direction must be NE or NW or SE or SW");
-        return
+        return console.error("NextBlock: Direction must be NE or NW or SE or SW");
     }
 
     let result = new Coord();
@@ -207,8 +254,14 @@ function NextBlock(coord, direction) {
     return result;
 }
 
-//FIXME: returns immutable object, fix that
+/**
+ * Deep clones the object
+ * @param {Object} object
+ * @returns {Object}
+ * @constructor
+ */
 function CloneObject(object) {
+//FIXME: returns immutable object, fix that
     return Object.create(object);
     // let clone = {};
     // clone.prototype = Object.create(Object.getPrototypeOf(object));
@@ -216,43 +269,18 @@ function CloneObject(object) {
     // return Object.assign(clone, object);
 }
 
-function Region() {
-    this.name = name;
-    this.northEast = new Coord();
-    this.southEast = new Coord();
-    this.northWest = new Coord();
-    this.southWest = new Coord();
-    //TODO: fill region coordinates
-    this.contains = location => {
-        if (!location) {
-            console.error('Provide location to check.');
-            return;
-        }
-        if (!location instanceof Coord) {
-            console.error('Region.contains: Type of location must be utils/Coord');
-            return;
-        }
-
-        function isBoundedByTopAndBottom() {
-            return this.northEast.lat >= location.lat && this.southEast.lat <= location.lat;
-        }
-
-        function isBoundedByLeftAndRight() {
-            return this.northEast.lng >= location.lng && this.northWest.lng <= location.lng;
-        }
-
-        return isBoundedByTopAndBottom() && isBoundedByLeftAndRight();
-    };
-}
-
+/**
+ * Calculates the distance in miles between two coordinate points
+ * @param {Coord} firstLocation
+ * @param {Coord} secondLocation
+ * @returns {number}
+ */
 function distanceBetween(firstLocation, secondLocation) {
     if (!(firstLocation instanceof Coord) || !(secondLocation instanceof Coord)) {
-        console.error("distanceBetween: Type of coord must be utils/Coord");
-        return;
+        return console.error("distanceBetween: Type of coord must be utils/Coord");
     }
     if (firstLocation.isNull() || secondLocation.isNull()) {
-        console.error("Coord is not initialized");
-        return;
+        return console.error("Coord is not initialized");
     }
     let r1 = firstLocation.lat * degToRad;
     let r2 = secondLocation.lat * degToRad;
@@ -266,6 +294,14 @@ function distanceBetween(firstLocation, secondLocation) {
     return earthRadius * c;
 }
 
+/**
+ * @typedef {Object} Polygon
+ * @param {number[][]} polygon
+ */
+
+/**
+ * @param polygon
+ */
 function Polygon(polygon) {
     this.polygon = polygon;
 
@@ -290,6 +326,11 @@ function Polygon(polygon) {
     }
 }
 
+/**
+ * Transforms value to camelcase
+ * @param value
+ * @returns {string}
+ */
 function camelcase(value) {
     let words = value.split(' ');
     words = words.map(word => {
@@ -307,7 +348,6 @@ module.exports = {
     NextBlock: NextBlock,
     CloneObject: CloneObject,
     Distance: distanceBetween,
-    Region: Region,
     Polygon: Polygon,
     Camelcase: camelcase
 };
