@@ -150,7 +150,7 @@ function savePropertiesInDBF() {
     });
     //WARN: dbf saves headers as long as 8 letters
     let buffer = dbf.structure(allProperties);
-    let dbfPath = path.join(__dirname, '../data/GreenWasteRoutes.dbf');
+    let dbfPath = path.join(__dirname, '../data/MesaCityZonesPreprocessed.dbf');
 
     function toBuffer(ab) {
         let buffer = Buffer.alloc(ab.byteLength);

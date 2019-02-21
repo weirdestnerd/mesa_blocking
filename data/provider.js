@@ -17,9 +17,9 @@ let coordProjection;
 /**
  * Define file paths
  */
-let shpFilePath = path.join(__dirname, './GreenWasteRoutes.shp');
-let originalDbfFilePath = path.join(__dirname, './GreenWasteRoutesOriginal.dbf');
-let dbfFilePath = path.join(__dirname, './GreenWasteRoutes.dbf');
+let shpFilePath = path.join(__dirname, './MesaCityZones.shp');
+let originalDbfFilePath = path.join(__dirname, './MesaCityZones.dbf');
+let dbfFilePath = path.join(__dirname, './MesaCityZonesPreprocessed.dbf');
 
 /**
  * Reads an excel file at path
@@ -241,7 +241,7 @@ function getProjection() {
     return new Promise((resolve, reject) => {
         //  to avoid reading file every time, save content in a variable
         if (coordProjection) resolve(coordProjection);
-        let prjFile = path.join(__dirname, './GreenWasteRoutes.prj');
+        let prjFile = path.join(__dirname, './MesaCityZones.prj');
         fs.readFile(prjFile, 'utf8', (error, data) => {
             if (error) reject(error);
             coordProjection = data;
@@ -301,7 +301,7 @@ function transformFeatureCoordinates(feature) {
  * @param {boolean} preprocessed if true, preprocessed zone is returned
  * @returns {Promise<any>}
  */
-function getZone(preprocessed) {
+function getZones(preprocessed) {
     return new Promise((resolve, reject) => {
         if (zoneGeoJSON) resolve(zoneGeoJSON);
         let filePath = preprocessed ? dbfFilePath : originalDbfFilePath;
@@ -325,7 +325,7 @@ function getZone(preprocessed) {
 function readGeoJSON(preprocessed) {
     return new Promise(resolve => {
         if (zoneGeoJSON) resolve(zoneGeoJSON);
-        Promise.all([getProjection(), getZone(preprocessed)])
+        Promise.all([getProjection(), getZones(preprocessed)])
             .then(() => {
                 zoneGeoJSON.features = zoneGeoJSON.features.map(feature => {
                     return transformFeatureCoordinates(feature);
