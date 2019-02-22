@@ -16,18 +16,34 @@ mixin week_dropdown(weeks)
                 a.dropdown-item(href="javascript:void(0)" value=file_name)=file_name
 
 block content
-    div#view.row
-        div#map.col-md-9
-            h1=title
-            p#console
-        div#control.col
+    div#console
+        div.console_header
+            svg(class="bd-placeholder-img rounded mr-2" width="20" height="20" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice" focusable="false" role="img")
+                rect.message_color(width="100%" height="100%")
+            strong.message_type
+        div.console_body
+            p.message
+
+    div#density_map_area.row
+        div#density_map_info.col-md-9
+            h1 Density Map
+        div#density_map_controls.col
             +week_dropdown(files)
     div.row
         div.col
-            div#mapid
+            div#density_map
+
+    div#trucks_map_area.row
+        div#trucks_map_info.col-md-9
+            h1 Trucks Map
+        div#trucks_map_controls.col
+            +week_dropdown(files)
+    div.row
+        div.col
+            div#trucks_map
 
 block scripts
     include dependency_scripts
-    script(src='/javascripts/leaflet.js')
     script(src='/javascripts/clientSocketIO.js')
-    script(src='/javascripts/interaction.js')
+    script(src='/javascripts/densityMapInteraction.js')
+    script(src='/javascripts/trucksMapInteraction.js')

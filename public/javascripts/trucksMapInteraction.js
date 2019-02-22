@@ -1,0 +1,1 @@
+initMap({divID: 'trucks_map'});
