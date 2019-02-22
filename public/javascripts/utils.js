@@ -1,7 +1,3 @@
-function getSelectedWeek() {
-    return document.querySelector('a.dropdown-item.active').getAttribute('value');
-}
-
 const mapconsole = {
     message: function (message, await) {
         if (typeof message !== 'string') {
@@ -9,13 +5,17 @@ const mapconsole = {
             return;
         }
         this.done();
-        document.querySelector('p#console').innerHTML = message;
-        document.querySelector('p#console').classList = 'bg-success';
+
+        document.querySelector('div#console rect.message_color').setAttribute('fill', 'green');
+        document.querySelector('div#console strong.message_type').innerHTML = 'Message';
+        document.querySelector('div#console div.console_body p.message').innerHTML = message;
         console.log(message);
+        document.querySelector('div#console').className = 'show';
+
         if (!await || await === false) {
             setTimeout(function () {
-                if (document.querySelector('p#console').innerHTML === message) {
-                    document.querySelector('p#console').innerHTML = '';
+                if (document.querySelector('div#console div.console_body p.message').innerHTML === message) {
+                    document.querySelector('div#console').classList.remove("show")
                 }
             }, 5000);
         }
@@ -25,16 +25,19 @@ const mapconsole = {
             console.error('map console message must be string');
             return;
         }
-        document.querySelector('p#console').innerHTML = message;
-        document.querySelector('p#console').classList = 'bg-danger';
-        console.error(message);
+        document.querySelector('div#console rect.message_color').setAttribute('fill', 'red');
+        document.querySelector('div#console strong.message_type').innerHTML = 'Error';
+        document.querySelector('div#console div.console_body p.message').innerHTML = message;
+        console.log(message);
+        document.querySelector('div#console').className = 'show';
+
         setTimeout(function () {
-            if (document.querySelector('p#console').innerHTML === message) {
-                document.querySelector('p#console').innerHTML = '';
+            if (document.querySelector('div#console div.console_body p.message').innerHTML === message) {
+                document.querySelector('div#console').classList.remove("show")
             }
         }, 5000);
     },
     done: function () {
-        document.querySelector('p#console').innerHTML = '';
+        document.querySelector('div#console').classList.remove("show")
     }
 };
