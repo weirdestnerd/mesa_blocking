@@ -12,7 +12,6 @@ div#console {
     visibility: hidden; /* Hidden by default. Visible on click */
     min-width: 250px; /* Set a default minimum width */
     margin-left: -125px; /* Divide value of min-width by 2 */
-    background-color: #e1e2e2; /* Black background color */
     color: black; /* White text color */
     text-align: center; /* Centered text */
     border-radius: 2%; /* Rounded borders */
@@ -46,6 +45,11 @@ div#console div.console_header div.message_color {
     width: 1em;
     height: 1em;
     border-radius: 30%;
+}
+
+div#console div.console_body {
+    background-color: #e1e2e2; /* Black background color */
+    padding: 0.1em 0;
 }
 
 /* Animations to fade the console in and out */

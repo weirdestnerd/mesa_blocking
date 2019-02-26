@@ -191,11 +191,12 @@ function createGeoJSONForWeek(week, allWeeks, mapData,) {
 
 (function loadMapLayout() {
     densityMap = initMap({divID: 'density_map'});
+    mapconsole.message('Getting Density Map Zone Layout ...');
     getZoneLayout().then(geoJSON => {
         L.geoJSON(geoJSON, {
             style: {fill: false}
         }).addTo(densityMap);
-        mapconsole.message('Zone plotted!');
+        mapconsole.message('Density Map Zone plotted!');
         return geoJSON;
     }).then(mapData => {
         // handle week selection

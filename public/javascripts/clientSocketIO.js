@@ -3,7 +3,6 @@ let zoneLayout;
 
 let getZoneLayout = () => {
     return new Promise((resolve, reject) => {
-        mapconsole.message('Getting Zone Layout ...');
         if (zoneLayout) resolve(zoneLayout);
         socket.emit('get zone layout', layout => {
             if (!layout) {
