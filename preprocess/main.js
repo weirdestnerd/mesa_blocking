@@ -167,7 +167,7 @@ function savePropertiesInDBF() {
 
 function preprocess() {
     return new Promise((resolve, reject) => {
-        dataProvider.getGeoJSONFromFile()
+        dataProvider.getGeoJSONFromFile(false)
             .then(geoJSON => {
                 zoneGeoJSON = geoJSON;
             })
@@ -202,6 +202,7 @@ function preprocess() {
                         .catch(reject);
                 })
             })
+            .catch(reject)
     });
 }
 
