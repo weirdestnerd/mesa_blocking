@@ -191,21 +191,24 @@ function createGeoJSONForWeek(week, allWeeks, mapData,) {
 
 (function loadMapLayout() {
     densityMap = initMap({divID: 'density_map'});
-    mapconsole.message('Getting Density Map Zone Layout ...');
-    getZoneLayout().then(geoJSON => {
-        L.geoJSON(geoJSON, {
-            style: {fill: false}
-        }).addTo(densityMap);
-        mapconsole.message('Density Map Zone plotted!');
-        return geoJSON;
-    }).then(mapData => {
-        // handle week selection
-        let allWeeks = [].slice.call(document.querySelectorAll('a.dropdown-item'));
-        for (let week of allWeeks) {
-            createGeoJSONForWeek(week, allWeeks, mapData);
-            addSelectionListenerToWeek(week, allWeeks)
-        }
-        createMapDensityLegend();
-        return mapData
-    })
+    mapconsole.message('Getting Density Map Data ...');
+    getDensityGeoJSON()
+        .then(geoJSON => {
+            L.geoJSON(geoJSON, {
+                style: {fill: false}
+            }).addTo(densityMap);
+            mapconsole.message('Density Map plotted!');
+            return geoJSON;
+        })
+        .then(mapData => {
+            // handle week selection
+            let allWeeks = [].slice.call(document.querySelectorAll('a.dropdown-item'));
+            for (let week of allWeeks) {
+                createGeoJSONForWeek(week, allWeeks, mapData);
+                addSelectionListenerToWeek(week, allWeeks)
+            }
+            createMapDensityLegend();
+            return mapData
+        })
+        .catch(mapconsole.error);
 }());
