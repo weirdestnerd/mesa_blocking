@@ -1,6 +1,20 @@
 const socket = io();
 let densityMapData;
-let trucksMapData
+let trucksMapData;
+let cityLayout;
+
+let getCityLayout = () => {
+    return new Promise((resolve, reject) => {
+        if (cityLayout) resolve(cityLayout);
+        socket.emit('get city layout', layout => {
+            if (!layout) {
+                reject('Internal Server Error.');
+            }
+            cityLayout = layout;
+            resolve(cityLayout);
+        })
+    });
+};
 
 let getDensityGeoJSON = () => {
     return new Promise((resolve, reject) => {
