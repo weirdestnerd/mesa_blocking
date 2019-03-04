@@ -8,7 +8,7 @@ const Shapefile = require('shapefile');
 const Proj4 = require('proj4');
 const path = require('path');
 const jsonfile = require('jsonfile');
-const utils = require('utils');
+const utils = require('../utils');
 
 /**
  * Global variables
