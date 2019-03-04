@@ -2,6 +2,9 @@ const dataProvider = require('./data/provider');
 
 let connection = io => {
     io.on('connection', socket => {
+        socket.on('get city layout', fn => {
+            dataProvider.getGeoJSONFromFile(false).then(fn).catch(console.error);
+        });
         socket.on('get density zone layout', fn => {
             dataProvider.getGeoJSONFromFile(true).then(fn).catch(console.error);
         });
