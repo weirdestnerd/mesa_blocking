@@ -1,6 +1,8 @@
 const dataProvider = require('../data/provider');
 const utils = require('../utils');
+const jsonfile = require('jsonfile');
 
+let trucksJSON = {};
 /*
 { type: 'Feature',
   properties:
@@ -21,9 +23,17 @@ const utils = require('../utils');
  * @param filenames Names of the files for all the weeks to consider
  * @returns {Promise<any>}
  */
-function createWeeklyTruckData(filenames) {
+function createWeeklyTruckData(filename) {
     return new Promise((resolve, reject) => {
-    //TODO:
+        let filePath = path.join(__dirname, '../data/weeks/' + filename);
+        dataProvider.getWeeklyDataFromFile(filePath, [])
+            .then(week => {
+                for (let pickup of week) {
+                //TODO:
+                }
+                resolve();
+            })
+            .catch(reject);
     })
 }
 
@@ -31,7 +41,9 @@ function createWeeklyTruckData(filenames) {
  * Save object in JSON file
  */
 function savePropertiesInJSONFile() {
-//TODO:
+    let filepath = path.join(__dirname, '../data/TrucksData.json');
+    jsonfile.writeFile(filepath, trucksJSON)
+        .catch(console.error);
 }
 
 function preprocess() {
@@ -41,10 +53,14 @@ function preprocess() {
             filenames = utils.ValidateFilenames(filenames, error => {
                 if (error) reject(error)
             });
-            createWeeklyTruckData(filenames)
+            let apply = filenames.map(filename => {
+                return createWeeklyTruckData(filename);
+            });
+            Promise.all(apply)
                 .then(() => {
                     savePropertiesInJSONFile();
-                }).catch(reject);
+                })
+                .catch(reject);
         })
     })
 }
