@@ -130,3 +130,7 @@ p#console {
     margin-right: 8px;
     opacity: 0.7;
 }
+
+div#trucks_graphs .cans.bar {
+    fill: steelblue;
+}
