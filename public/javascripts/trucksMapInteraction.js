@@ -1,8 +1,9 @@
 let trucksMap;
 let weeklyTrucksGeoJSON = {};
 let currentTrucksMapLayer;
+let currentTrucksMapLayerControl;
 
-function createRoutesForWeek(routes) {
+function createRoutesForWeek(week) {
     function generateColorPalette(colorGrades) {
         let chunk = hexColorDistance('f7fcfd', '00441b').map(distance => {
             return parseInt(distance / colorGrades.length);
@@ -16,9 +17,9 @@ function createRoutesForWeek(routes) {
         return result;
     }
 
-    let polylines = routes.map(truck => {
+    function addZValueToStops(stops) {
         let colorGrades = [];
-        let stops = truck.stops.map((stop, index) => {
+        let updatedStops = stops.map((stop, index) => {
             let colorGrade;
             if (index % 2 === 0) {
                 colorGrade = (1 / (index + 1)).toFixed(2);
@@ -28,29 +29,38 @@ function createRoutesForWeek(routes) {
             stop.push(parseFloat(colorGrade));
             return stop;
         });
-        let palette = generateColorPalette(colorGrades);
-        return L.hotline(stops, {palette: palette}).bindTooltip(truck.vehicle);
-    });
+        return {stops: updatedStops, colorGrades: colorGrades}
+    }
 
-    return L.layerGroup(polylines);
+    function getPolylinesForTrucks(day) {
+        return week.activeDays[day].map(truckNumber => {
+            let truck = week.routes.find(route => route.vehicle === truckNumber);
+            if (!truck) {
+                mapconsole.error(`TrucksMapInteraction::createRoutesForWeek: Truck ${truckNumber} not found in week.`)
+            }
+            let z = addZValueToStops(truck.stops[day]);
+            let palette = generateColorPalette(z.colorGrades);
+            return L.hotline(z.stops, {palette: palette}).bindTooltip(truck.vehicle);
+        });
+    }
+
+    let result = {};
+
+    Object.keys(week.activeDays).forEach(day => {
+        let polylines = getPolylinesForTrucks(day);
+        result[day] = L.layerGroup(polylines);
+    });
+    return result;
 }
 
-function addSelectionListenerToTrucksWeek(week, allWeeksButton) {
+function addSelectionListenerToTrucksWeek(week, activeDays, allWeeksButton) {
     week.addEventListener('click', () => {
         allWeeksButton.forEach(otherWeek => {
             otherWeek.classList.remove('active');
         });
         week.classList.add('active');
         document.querySelector('div#trucks_map_controls button#week_selection').innerHTML = week.innerHTML;
-        if (currentTrucksMapLayer) trucksMap.removeLayer(currentTrucksMapLayer);
-        let weekName = week.innerHTML.replace( /(.csv)|(.xlsx)$/g, '');
-        currentTrucksMapLayer = weeklyTrucksGeoJSON[weekName];
-        trucksMap.addLayer(currentTrucksMapLayer);
-        let overlayControls = {};
-        currentTrucksMapLayer.eachLayer(layer => {
-            overlayControls[layer.getTooltip()['_content']] = layer;
-        });
-        L.control.layers(null, overlayControls).addTo(trucksMap);
+        addDaysControls(week, activeDays);
     });
     document.querySelector('div#trucks_map_controls #week_selection').classList.remove('disabled');
 }
@@ -82,8 +92,11 @@ function calculateCansCount(data) {
     return result;
 }
 
-function createCansGraph(data) {
-    let cansCount = calculateCansCount(data);
+function createBarGraph(data, divID, options) {
+    if (!options.hasOwnProperty('x') || !options.hasOwnProperty('y')) {
+        console.error('x & y identifiers not provided');
+        return;
+    }
     let margin = {top: 20, right: 20, bottom: 30, left: 40},
         width = 320 - margin.left - margin.right,
         height = 200 - margin.top - margin.bottom;
@@ -98,7 +111,7 @@ function createCansGraph(data) {
 // append the svg object to the body of the page
 // append a 'group' element to 'svg'
 // moves the 'group' element to the top left margin
-    let svg = d3.select("div.cans_graph").append("svg")
+    let svg = d3.select(`div${divID}`).append("svg")
         .attr("width", width + margin.left + margin.right)
         .attr("height", height + margin.top + margin.bottom)
         .append("g")
@@ -106,18 +119,18 @@ function createCansGraph(data) {
             "translate(" + margin.left + "," + margin.top + ")");
 
     // Scale the range of the data in the domains
-    x.domain(cansCount.map(function(d) { return d.vehicle; }));
-    y.domain([0, d3.max(cansCount, function(d) { return d.cans; })]);
+    x.domain(data.map(function(d) { return d[options.x]; }));
+    y.domain([0, d3.max(data, function(d) { return d[options.y]; })]);
 
     // append the rectangles for the bar chart
     svg.selectAll(".bar")
-        .data(cansCount)
+        .data(data)
         .enter().append("rect")
-        .attr("class", "cans bar")
-        .attr("x", function(d) { return x(d.vehicle); })
+        .attr("class", divID)
+        .attr("x", function(d) { return x(d[options.x]); })
         .attr("width", x.bandwidth())
-        .attr("y", function(d) { return y(d.cans); })
-        .attr("height", function(d) { return height - y(d.cans); });
+        .attr("y", function(d) { return y(d[options.y]); })
+        .attr("height", function(d) { return height - y(d[options.y]); });
 
     // add the x Axis
     svg.append("g")
@@ -128,6 +141,57 @@ function createCansGraph(data) {
     svg.append("g")
         .call(d3.axisLeft(y));
 
+}
+
+function addDaysControls(week, activeDays) {
+    let nav = document.querySelector('div#trucks_days_controls ul.nav.nav-pills');
+    nav.innerHTML = '';
+
+    activeDays.forEach(day => {
+        let li = document.createElement('li');
+        li.className = 'nav-item';
+        let link = `<a class="nav-link" id="${day}" data-toggle="pill" href="" role="tab" aria-controls="pills-home" aria-selected="true">${day}</a>`;
+        li.innerHTML = link;
+        nav.insertAdjacentElement('beforeend', li);
+        li.addEventListener('click', () => {
+            if (currentTrucksMapLayer) trucksMap.removeLayer(currentTrucksMapLayer);
+            let weekName = week.innerHTML.replace( /(.csv)|(.xlsx)$/g, '');
+            currentTrucksMapLayer = weeklyTrucksGeoJSON[weekName][day];
+            trucksMap.addLayer(currentTrucksMapLayer);
+            let overlayControls = {};
+            currentTrucksMapLayer.eachLayer(layer => {
+                overlayControls[layer.getTooltip()['_content']] = layer;
+            });
+            if (currentTrucksMapLayerControl) trucksMap.removeLayer(currentTrucksMapLayerControl);
+            currentTrucksMapLayerControl = L.control.layers(null, overlayControls);
+            currentTrucksMapLayerControl.addTo(trucksMap);
+        })
+    });
+}
+
+function calculateHousesCount(data) {
+    let result = [];
+
+    for (let week in data) {
+        data[week].routes.forEach(truck => {
+            let totalHouses = Object.keys(truck.stops).reduce( (acc, onDay) => {
+                return acc + truck.stops[onDay].length;
+            }, 0);
+            result.push({'vehicle': truck.vehicle, 'houses': totalHouses})
+        })
+    }
+    return result;
+}
+
+function calculateHoursCount(data) {
+    let result = [];
+
+    for (let week in data) {
+        data[week].routes.forEach(truck => {
+            result.push({'vehicle': truck.vehicle, 'hours': truck.hours})
+        })
+    }
+    return result;
 }
 
 (function loadMapLayout() {
@@ -146,14 +210,20 @@ function createCansGraph(data) {
             let allWeeksButton = [].slice.call(document.querySelectorAll('div#trucks_map_controls a.dropdown-item'));
             for (let week of allWeeksButton) {
                 let weekName = week.innerHTML.replace( /(.csv)|(.xlsx)$/g, '');
-                weeklyTrucksGeoJSON[weekName] = createRoutesForWeek(data[weekName].routes);
-                addSelectionListenerToTrucksWeek(week, allWeeksButton);
+                let activeDays = Object.keys(data[weekName].activeDays);
+                weeklyTrucksGeoJSON[weekName] = createRoutesForWeek(data[weekName]);
+                addSelectionListenerToTrucksWeek(week, activeDays, allWeeksButton);
             }
             createMapRouteLegend();
             return data;
         })
         .then(data => {
-            createCansGraph(data);
+            let cansCount = calculateCansCount(data);
+            createBarGraph(cansCount, '.cans_graph', {x: 'vehicle', y: 'cans'});
+            let housesCount = calculateHousesCount(data);
+            createBarGraph(housesCount, '.houses_graph', {x: 'vehicle', y: 'houses'});
+            let hoursCount = calculateHoursCount(data);
+            createBarGraph(hoursCount, '.hours_graph', {x: 'vehicle', y: 'hours'});
         })
         .catch(mapconsole.error)
         .catch(mapconsole.error)

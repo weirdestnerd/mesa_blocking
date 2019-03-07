@@ -131,6 +131,11 @@ p#console {
     opacity: 0.7;
 }
 
-div#trucks_graphs .cans.bar {
+div#trucks_graphs .cans_graph{
     fill: steelblue;
+}
+
+div.horizontal_line {
+    border-bottom: 1px solid black;
+    margin: 2em 0;
 }

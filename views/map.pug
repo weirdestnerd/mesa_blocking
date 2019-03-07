@@ -26,12 +26,16 @@ block content
     div.row
         div.col
             div#density_map
-
+    div.horizontal_line
     div#trucks_map_area.row
         div#trucks_map_info.col-md-9
             h1 Trucks Map
         div#trucks_map_controls.col
             +week_dropdown(files)
+    div.row
+        div#trucks_days_controls.col-8.offset-2
+            ul(class="nav nav-pills mb-3" id="pills-tab" role="tablist")
+                p Select Week First
     div.row
         div.col
             div#trucks_map
