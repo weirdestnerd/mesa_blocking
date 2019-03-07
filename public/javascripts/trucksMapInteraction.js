@@ -33,7 +33,7 @@ function createRoutesForWeek(week) {
     }
 
     function getPolylinesForTrucks(day) {
-        return week.activeDays[day].map(truckNumber => {
+        return Array.from(week.activeDays[day]).map(truckNumber => {
             let truck = week.routes.find(route => route.vehicle === truckNumber);
             if (!truck) {
                 mapconsole.error(`TrucksMapInteraction::createRoutesForWeek: Truck ${truckNumber} not found in week.`)
@@ -188,7 +188,8 @@ function calculateHoursCount(data) {
 
     for (let week in data) {
         data[week].routes.forEach(truck => {
-            result.push({'vehicle': truck.vehicle, 'hours': truck.hours})
+            let hours = Math.floor(truck.seconds / 3600);
+            result.push({'vehicle': truck.vehicle, 'hours': hours})
         })
     }
     return result;

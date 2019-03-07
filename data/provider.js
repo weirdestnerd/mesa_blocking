@@ -36,7 +36,7 @@ function getExcelData(filepath, schema) {
             return property.trim().toUpperCase().replace(' ', '_');
         });
         //  read file
-        let workbook = XLSX.readFile(filepath);
+        let workbook = XLSX.readFile(filepath, {cellDates: true});
 
         //  if there are more than 1 worksheets in excel file, reject promise
         if (workbook.SheetNames.length > 1) {
@@ -189,7 +189,7 @@ function getCSVData(filepath, schema) {
  */
 function readFile(filepath, schema) {
     return new Promise((resolve, reject) => {
-        let type = utils.ExtractExtension('csv') || utils.ExtractExtension('xlsx');
+        let type = utils.ExtractExtension(filepath, 'csv') || utils.ExtractExtension(filepath, 'xlsx');
         if (!utils.ValidatePath(filepath, type)) {
             reject('Provided path is invalid');
         }

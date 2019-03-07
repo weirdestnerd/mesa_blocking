@@ -1,4 +1,6 @@
 const Enum = require('enum');
+const path = require('path');
+const fs = require('fs');
 
 /**
  *  Variables definition
@@ -370,11 +372,12 @@ function validateFilenames(filenames, callback) {
         callback('Rename filenames that are longer than 8 letters')
     }
 
-    filenames.forEach(filename => {
-        let oldPath = path.join(__dirname, '../data/weeks/' + filename);
-        let newPath = path.join(__dirname, '../data/weeks/' + camelcase(filename));
-        fs.renameSync(oldPath, newPath);
-    });
+    //TODO:
+    // filenames.forEach(filename => {
+    //     let oldPath = path.join(__dirname, '../data/weeks/' + filename);
+    //     let newPath = path.join(__dirname, '../data/weeks/' + camelcase(filename));
+    //     fs.renameSync(oldPath, newPath);
+    // });
     return filenames;
 }
 
