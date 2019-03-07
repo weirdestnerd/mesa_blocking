@@ -53,3 +53,37 @@ const mapconsole = {
         document.querySelector('body').insertAdjacentElement('afterbegin', el);
     }
 };
+
+function hexColorDistance(first, second) {
+    let result = [];
+    if (first[0] === '#') first = first.substring(1);
+    if (second[0] === '#') second = second.substring(1);
+    for (let i = 0; i < 6; i+=2) {
+        let sub1 = first.substring(i, i + 2);
+        let sub2 = second.substring(i, i + 2);
+        let val1 = parseInt(sub1, 16);
+        let val2 = parseInt(sub2, 16);
+        result.push(val1 - val2);
+    }
+    return result;
+}
+
+function nextHexColor(start, distance) {
+    if (start[0] === '#') start = start.substring(1);
+    let result = '#';
+    for (let i = 0; i < 6; i+=2) {
+        let sub = start.substring(i, i + 2);
+        let next = parseInt(sub, 16);
+        if (typeof distance === "number") {
+            next += distance;
+        } else {
+            next += distance[i / 2];
+        }
+        if (next > 255) next = 255;
+        if (next < 0) next = 0;
+        let hex = next.toString(16).toUpperCase();
+        if (hex.length === 1) hex = '0' + hex;
+        result += hex;
+    }
+    return result;
+}
