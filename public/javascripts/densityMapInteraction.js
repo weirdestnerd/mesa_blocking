@@ -1,5 +1,6 @@
-let weeklyGeoJSON = {};
-let currentMapLayer;
+let densityMap;
+let weeklyDensityGeoJSON = {};
+let currentDensityMapLayer;
 let densityColorGrades = {
     0: 'gray',
     10: '#ffffcc',
@@ -129,7 +130,7 @@ function createMapDensityLegend() {
 
     legend.onAdd = function (map) {
 
-        let div = L.DomUtil.create('div', 'info legend');
+        let div = L.DomUtil.create('div', 'density info legend');
         let gradeKeys = Object.keys(densityColorGrades);
         // should be sorted already, but just in case the object is tampered re-sort
         gradeKeys.sort((first, second) => first - second);
@@ -152,24 +153,24 @@ function createMapDensityLegend() {
         return div;
     };
 
-    legend.addTo(mymap);
+    legend.addTo(densityMap);
 }
 
-function addSelectionListenerToWeek(week, allWeeks) {
+function addSelectionListenerToDensityWeek(week, allWeeks) {
     week.addEventListener('click', () => {
         allWeeks.forEach(otherWeek => {
             otherWeek.classList.remove('active');
         });
         week.classList.add('active');
-        document.querySelector('button#week_selection').innerHTML = week.innerHTML;
-        if (currentMapLayer) mymap.removeLayer(currentMapLayer);
-        currentMapLayer = weeklyGeoJSON[week.innerHTML];
-        mymap.addLayer(currentMapLayer);
+        document.querySelector('div#density_map_controls button#week_selection').innerHTML = week.innerHTML;
+        if (currentDensityMapLayer) densityMap.removeLayer(currentDensityMapLayer);
+        currentDensityMapLayer = weeklyDensityGeoJSON[week.innerHTML];
+        densityMap.addLayer(currentDensityMapLayer);
     });
-    document.querySelector('#week_selection').classList.remove('disabled');
+    document.querySelector('div#density_map_controls #week_selection').classList.remove('disabled');
 }
 
-function createGeoJSONForWeek(week, allWeeks, mapData,) {
+function createGeoJSONForWeek(week, allWeeks, mapData) {
     //WARN: property headers are only 8 letters long due to dbf storage limit
     let weekName = week.innerHTML.slice(0, 8);
     let weekGeoJSON = L.geoJSON(mapData, {
@@ -185,24 +186,29 @@ function createGeoJSONForWeek(week, allWeeks, mapData,) {
         else style.fillColor = getColor(density);
         return style;
     });
-    weeklyGeoJSON[week.innerHTML] = weekGeoJSON;
+    weeklyDensityGeoJSON[week.innerHTML] = weekGeoJSON;
 }
 
 (function loadMapLayout() {
-    getZoneLayout().then(geoJSON => {
-        L.geoJSON(geoJSON, {
-            style: {fill: false}
-        }).addTo(mymap);
-        mapconsole.message('Zone plotted!');
-        return geoJSON;
-    }).then(mapData => {
-        // handle week selection
-        let allWeeks = [].slice.call(document.querySelectorAll('a.dropdown-item'));
-        for (let week of allWeeks) {
-            createGeoJSONForWeek(week, allWeeks, mapData);
-            addSelectionListenerToWeek(week, allWeeks)
-        }
-        createMapDensityLegend();
-        return mapData
-    })
+    densityMap = initMap({divID: 'density_map'});
+    mapconsole.message('Getting Density Map Data ...');
+    getDensityGeoJSON()
+        .then(geoJSON => {
+            L.geoJSON(geoJSON, {
+                style: {fill: false}
+            }).addTo(densityMap);
+            mapconsole.message('Density Map plotted!');
+            return geoJSON;
+        })
+        .then(mapData => {
+            // handle week selection
+            let allWeeks = [].slice.call(document.querySelectorAll('div#density_map_controls a.dropdown-item'));
+            for (let week of allWeeks) {
+                createGeoJSONForWeek(week, allWeeks, mapData);
+                addSelectionListenerToDensityWeek(week, allWeeks)
+            }
+            createMapDensityLegend();
+            return mapData
+        })
+        .catch(mapconsole.error);
 }());

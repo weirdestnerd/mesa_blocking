@@ -7,6 +7,8 @@ const csv = require('csv-parser');
 const Shapefile = require('shapefile');
 const Proj4 = require('proj4');
 const path = require('path');
+const jsonfile = require('jsonfile');
+const utils = require('../utils');
 
 /**
  * Global variables
@@ -17,24 +19,24 @@ let coordProjection;
 /**
  * Define file paths
  */
-let shpFilePath = path.join(__dirname, './GreenWasteRoutes.shp');
-let originalDbfFilePath = path.join(__dirname, './GreenWasteRoutesOriginal.dbf');
-let dbfFilePath = path.join(__dirname, './GreenWasteRoutes.dbf');
+let shpFilePath = path.join(__dirname, './MesaCityZones.shp');
+let originalDbfFilePath = path.join(__dirname, './MesaCityZones.dbf');
+let dbfFilePath = path.join(__dirname, './MesaCityZonesPreprocessed.dbf');
 
 /**
  * Reads an excel file at path
- * @param {string} path path to file
+ * @param {string} filepath path to file
  * @param {Object} schema schema specifying keys of key-value result to return
  * @returns {Promise<Object[]>}
  */
-function getExcelData(path, schema) {
+function getExcelData(filepath, schema) {
     return new Promise((resolve, reject) => {
         //  transform the schema to be consistent, i.e. capitalize hyphenated
         let transformedSchema = schema.map(property => {
             return property.trim().toUpperCase().replace(' ', '_');
         });
         //  read file
-        let workbook = XLSX.readFile(path);
+        let workbook = XLSX.readFile(filepath, {cellDates: true});
 
         //  if there are more than 1 worksheets in excel file, reject promise
         if (workbook.SheetNames.length > 1) {
@@ -118,11 +120,11 @@ function getExcelData(path, schema) {
 
 /**
  * Reads an csv file at path
- * @param {string} path path to file
+ * @param {string} filepath path to file
  * @param {Object} schema schema specifying keys of key-value result to return
  * @returns {Promise<Object[]>}
  */
-function getCSVData(path, schema) {
+function getCSVData(filepath, schema) {
     return new Promise(resolve => {
         let data = [];
         let csvCustomerSchema = {};
@@ -155,7 +157,7 @@ function getCSVData(path, schema) {
             }
         }
 
-        fs.createReadStream(path)
+        fs.createReadStream(filepath)
             .pipe(csv())
             .on('headers', headers => {
                 convertRequestedSchema(headers);
@@ -181,47 +183,22 @@ function getCSVData(path, schema) {
 
 /**
  * Supports reading from excel and csv files
- * @param {string} path path to file
+ * @param {string} filepath path to file
  * @param {Object} schema schema specifying keys of key-value result to return
  * @returns {Promise<Object[]>}
  */
-function readFile(path, schema) {
+function readFile(filepath, schema) {
     return new Promise((resolve, reject) => {
-        let type = '';
-
-        /**
-         * Extracts the extension type of path
-         */
-        function extractExtension() {
-            let regex = /(.csv)|(.xlsx)$/g;
-            let foundExtension = path.match(regex);
-            if (foundExtension === null) {
-                reject('File extension is expected in file path. if present, check for correctness.');
-            }
-            type = foundExtension[0];
+        let type = utils.ExtractExtension(filepath, 'csv') || utils.ExtractExtension(filepath, 'xlsx');
+        if (!utils.ValidatePath(filepath, type)) {
+            reject('Provided path is invalid');
         }
-
-        /**
-         * Validates path
-         */
-        (function validatePath() {
-            if (!path) {
-                reject('Path is not provided.');
-            }
-            extractExtension();
-            let directory = path.replace(type, '');
-            let regex = /([a-zA-Z0-9\s_\\.\-\(\):])+/g;
-            if (!regex.test(directory)) {
-                reject('File name is empty');
-            }
-        }());
-
         switch (type) {
             case '.xlsx':
-                getExcelData(path, schema).then(resolve).catch(reject);
+                getExcelData(filepath, schema).then(resolve).catch(reject);
                 break;
             case '.csv':
-                getCSVData(path, schema).then(resolve).catch(reject);
+                getCSVData(filepath, schema).then(resolve).catch(reject);
                 break;
             default: reject('Provided type is not supported.');
         }
@@ -241,7 +218,7 @@ function getProjection() {
     return new Promise((resolve, reject) => {
         //  to avoid reading file every time, save content in a variable
         if (coordProjection) resolve(coordProjection);
-        let prjFile = path.join(__dirname, './GreenWasteRoutes.prj');
+        let prjFile = path.join(__dirname, './MesaCityZones.prj');
         fs.readFile(prjFile, 'utf8', (error, data) => {
             if (error) reject(error);
             coordProjection = data;
@@ -301,7 +278,7 @@ function transformFeatureCoordinates(feature) {
  * @param {boolean} preprocessed if true, preprocessed zone is returned
  * @returns {Promise<any>}
  */
-function getZone(preprocessed) {
+function getZones(preprocessed) {
     return new Promise((resolve, reject) => {
         if (zoneGeoJSON) resolve(zoneGeoJSON);
         let filePath = preprocessed ? dbfFilePath : originalDbfFilePath;
@@ -325,7 +302,7 @@ function getZone(preprocessed) {
 function readGeoJSON(preprocessed) {
     return new Promise(resolve => {
         if (zoneGeoJSON) resolve(zoneGeoJSON);
-        Promise.all([getProjection(), getZone(preprocessed)])
+        Promise.all([getProjection(), getZones(preprocessed)])
             .then(() => {
                 zoneGeoJSON.features = zoneGeoJSON.features.map(feature => {
                     return transformFeatureCoordinates(feature);
@@ -349,9 +326,20 @@ function readCustomersFile(schema) {
     })
 }
 
+function readJSON(filename) {
+    return new Promise((resolve, reject) => {
+        if(!utils.ExtractExtension(filename, 'json')) {
+            reject('Provided file is not a JSON file')
+        }
+        let filepath = path.join(__dirname, filename);
+        jsonfile.readFile(filepath).then(resolve).catch(reject);
+    });
+}
+
 module.exports = {
     getWeeklyDataFromFile: readFile,
     getWeeklyDataFromDatabase: readDatabase,
     getAllCustomers: readCustomersFile,
-    getGeoJSONFromFile: readGeoJSON
+    getGeoJSONFromFile: readGeoJSON,
+    getJSONFromFile: readJSON
 };

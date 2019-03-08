@@ -6,7 +6,7 @@ const Polygon = require('../utils').Polygon;
 const fs = require('fs');
 const path = require('path');
 const dbf = require('dbf');
-const camelcase = require('../utils').Camelcase;
+const utils = require('../utils');
 
 /**
  * Global dependencies
@@ -77,44 +77,6 @@ function assignWeekDataToZone(filename) {
 }
 
 /**
- * Validates filenames and rename filenames if necessary
- * @param {string[]} filenames
- * @param callback
- * @returns {*}
- */
-function validateFilenames(filenames, callback) {
-    function extractExtension(filename) {
-        let regex = /(.csv)|(.xlsx)$/g;
-        let foundExtension = filename.match(regex);
-        if (foundExtension === null) {
-            callback('File extension is expected in file path. if present, check for correctness.');
-        }
-        let type = foundExtension[0];
-        if (!['.csv', '.xlsx'].includes(type)) {
-            callback('Provided type is not supported.');
-        }
-        return type;
-    }
-
-    function isLong(filename) {
-        let extension = extractExtension(filename);
-        let name = filename.replace(extension, '');
-        return name.length > 8;
-    }
-
-    if (filenames.some(isLong)) {
-        callback('Rename filenames that are longer than 8 letters')
-    }
-
-    filenames.forEach(filename => {
-        let oldPath = path.join(__dirname, '../data/weeks/' + filename);
-        let newPath = path.join(__dirname, '../data/weeks/' + camelcase(filename));
-        fs.renameSync(oldPath, newPath);
-    });
-    return filenames;
-}
-
-/**
  * Calculate density for each zone
  */
 function calculateZoneDensity() {
@@ -150,7 +112,7 @@ function savePropertiesInDBF() {
     });
     //WARN: dbf saves headers as long as 8 letters
     let buffer = dbf.structure(allProperties);
-    let dbfPath = path.join(__dirname, '../data/GreenWasteRoutes.dbf');
+    let dbfPath = path.join(__dirname, '../data/MesaCityZonesPreprocessed.dbf');
 
     function toBuffer(ab) {
         let buffer = Buffer.alloc(ab.byteLength);
@@ -167,14 +129,14 @@ function savePropertiesInDBF() {
 
 function preprocess() {
     return new Promise((resolve, reject) => {
-        dataProvider.getGeoJSONFromFile()
+        dataProvider.getGeoJSONFromFile(false)
             .then(geoJSON => {
                 zoneGeoJSON = geoJSON;
             })
             .then(() => {
                 fs.readdir(path.join(__dirname, '../data/weeks/'), (error, filenames) => {
                     if (error) reject(error);
-                    filenames = validateFilenames(filenames, error => {
+                    filenames = utils.ValidateFilenames(filenames, error => {
                         if (error) reject(error)
                     });
                     allWeeksFileNames = filenames;
@@ -202,6 +164,7 @@ function preprocess() {
                         .catch(reject);
                 })
             })
+            .catch(reject)
     });
 }
 

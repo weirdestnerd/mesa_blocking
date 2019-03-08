@@ -1,4 +1,6 @@
 const Enum = require('enum');
+const path = require('path');
+const fs = require('fs');
 
 /**
  *  Variables definition
@@ -339,6 +341,79 @@ function camelcase(value) {
     return words.join('');
 }
 
+
+/**
+ * Validates filenames and rename filenames if necessary
+ * @param {string[]} filenames
+ * @param callback
+ * @returns {*}
+ */
+function validateFilenames(filenames, callback) {
+    function extractExtension(filename) {
+        let regex = /(.csv)|(.xlsx)$/g;
+        let foundExtension = filename.match(regex);
+        if (foundExtension === null) {
+            callback('File extension is expected in file path. if present, check for correctness.');
+        }
+        let type = foundExtension[0];
+        if (!['.csv', '.xlsx'].includes(type)) {
+            callback('Provided type is not supported.');
+        }
+        return type;
+    }
+
+    function isLong(filename) {
+        let extension = extractExtension(filename);
+        let name = filename.replace(extension, '');
+        return name.length > 8;
+    }
+
+    if (filenames.some(isLong)) {
+        callback('Rename filenames that are longer than 8 letters')
+    }
+
+    //TODO:
+    // filenames.forEach(filename => {
+    //     let oldPath = path.join(__dirname, '../data/weeks/' + filename);
+    //     let newPath = path.join(__dirname, '../data/weeks/' + camelcase(filename));
+    //     fs.renameSync(oldPath, newPath);
+    // });
+    return filenames;
+}
+
+/**
+ * Extracts the expected extension type of path
+ */
+function extractExtension(filepath, extension) {
+    let regex = new RegExp(`(.${extension})`, 'g');
+    let foundExtension = filepath.match(regex);
+    if (foundExtension === null) {
+        console.warn('File extension is expected in file path. if present, check for correctness.');
+        return null;
+    }
+    return foundExtension[0];
+}
+
+/**
+ * Validates path
+ */
+function validatePath(path, type) {
+    if (!type) {
+        console.warn('Expected type of file is not provided');
+        return;
+    }
+    if (!path) {
+        return null;
+    }
+    let directory = path.replace(type, '');
+    let regex = /([a-zA-Z0-9\s_\\.\-\(\):])+/g;
+    if (!regex.test(directory)) {
+        console.warn('File name is empty');
+        return null;
+    }
+    return path;
+}
+
 module.exports = {
     Directions: Directions,
     Coord: Coord,
@@ -349,5 +424,8 @@ module.exports = {
     CloneObject: CloneObject,
     Distance: distanceBetween,
     Polygon: Polygon,
-    Camelcase: camelcase
+    Camelcase: camelcase,
+    ValidateFilenames: validateFilenames,
+    ExtractExtension: extractExtension,
+    ValidatePath: validatePath
 };

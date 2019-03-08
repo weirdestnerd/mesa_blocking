@@ -1,17 +1,43 @@
 const socket = io();
-let zoneLayout;
+let densityMapData;
+let trucksMapData;
+let cityLayout;
 
-let getZoneLayout = () => {
+let getCityLayout = () => {
     return new Promise((resolve, reject) => {
-        mapconsole.message('Getting Zone Layout ...');
-        if (zoneLayout) resolve(zoneLayout);
-        socket.emit('get zone layout', layout => {
+        if (cityLayout) resolve(cityLayout);
+        socket.emit('get city layout', layout => {
             if (!layout) {
-                mapconsole.error('Internal Server Error.');
-                reject();
+                reject('Internal Server Error.');
             }
-            zoneLayout = layout;
-            resolve(zoneLayout);
+            cityLayout = layout;
+            resolve(cityLayout);
+        })
+    });
+};
+
+let getDensityGeoJSON = () => {
+    return new Promise((resolve, reject) => {
+        if (densityMapData) resolve(densityMapData);
+        socket.emit('get density zone layout', layout => {
+            if (!layout) {
+                reject('Internal Server Error.');
+            }
+            densityMapData = layout;
+            resolve(densityMapData);
+        })
+    });
+};
+
+let getTrucksGeoJSON = () => {
+    return new Promise((resolve, reject) => {
+        if (trucksMapData) resolve(trucksMapData);
+        socket.emit('get trucks data', data => {
+            if (!data) {
+                reject('Internal Server Error.');
+            }
+            trucksMapData = data;
+            resolve(trucksMapData);
         })
     });
 };
