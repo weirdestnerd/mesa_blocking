@@ -22,8 +22,8 @@ function initMap(options) {
     map.setMinZoom(11.4);
 
     //  restrict draggable map to city bounds
-    let MesaCityNECorner = L.latLng(33.516079, -111.841803);
-    let MesaCitySWCorner = L.latLng(33.282113, -111.584269);
+    let MesaCityNECorner = L.latLng(33.626525, -111.539644);
+    let MesaCitySWCorner = L.latLng(33.239434, -112.091777);
     let bounds = L.latLngBounds(MesaCityNECorner, MesaCitySWCorner);
     map.setMaxBounds(bounds);
 

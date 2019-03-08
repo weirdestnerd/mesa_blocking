@@ -45,6 +45,10 @@ function createWeeklyTruckData(filename) {
         }
     }
 
+    function isDate(value) {
+        return new Date(value).toString() !== 'Invalid Date';
+    }
+
     return new Promise((resolve, reject) => {
         let filePath = path.join(__dirname, '../data/weeks/' + filename);
         let weekName = filename.replace(/(.csv)|(.xlsx)$/g, '');
@@ -61,18 +65,23 @@ function createWeeklyTruckData(filename) {
                 let routes = [];
                 let activeDays = {};
 
-                //WARN: assuming record has all queried properties.
                 for (let record of week) {
                     if (record.hasOwnProperty('VEHICLE') && record.VEHICLE) {
                         let truck = routes.find(route => route.vehicle === record.VEHICLE);
                         if (!truck) truck = {vehicle: record.VEHICLE, stops: {}, cans: 0, seconds: 0};
-                        let day;
-                        if (record.hasOwnProperty('START_DATE') && record.START_DATE && !isNaN(record.START_DATE)) {
-                            day = toDay(new Date(record.START_DATE).getDay());
+                        if (record.hasOwnProperty('START_DATE') && record.START_DATE && isDate(record.START_DATE)) {
+                            let day = toDay(new Date(record.START_DATE).getDay());
                             if (!truck.stops.hasOwnProperty(day)) {
                                 truck.stops[day] = [];
                             }
                             truck.stops[day].push([record.LATITUDE, record.LONGITUDE]);
+                            if (activeDays.hasOwnProperty(day)) {
+                                if (!activeDays[day].includes(record.VEHICLE)) {
+                                    activeDays[day].push(record.VEHICLE);
+                                }
+                            } else {
+                                activeDays[day] = [record.VEHICLE];
+                            }
                         }
                         if (record.hasOwnProperty('CAN_COUNT') && record.CAN_COUNT) {
                             truck.cans += parseInt(record.CAN_COUNT);
@@ -84,21 +93,10 @@ function createWeeklyTruckData(filename) {
                         if (truckIndex < 0) {
                             routes.push(truck);
                         } else routes[truckIndex] = truck;
-
-                        if (activeDays.hasOwnProperty(day)) {
-                            activeDays[day].add(record.VEHICLE);
-                        } else {
-                            activeDays[day] = new Set();
-                            activeDays[day].add(record.VEHICLE);
-                        }
                     }
                 }
-                // trucksJSON[weekName].routes = routes;
-                // trucksJSON[weekName].activeDays = activeDays;
-                let json = {};
-                json[weekName].routes = routes;
-                json[weekName].activeDays = activeDays;
-                savePropertiesInJSONFile(json);
+                trucksJSON[weekName].routes = routes;
+                trucksJSON[weekName].activeDays = activeDays;
                 resolve();
             })
             .catch(reject);
@@ -108,9 +106,9 @@ function createWeeklyTruckData(filename) {
 /**
  * Save object in JSON file
  */
-function savePropertiesInJSONFile(json) {
+function savePropertiesInJSONFile() {
     let filepath = path.join(__dirname, '../data/TrucksData.json');
-    jsonfile.writeFile(filepath, json)
+    jsonfile.writeFile(filepath, trucksJSON)
         .catch(console.error);
 }
 
@@ -126,12 +124,11 @@ function preprocess() {
             });
             Promise.all(apply)
                 .then(() => {
-                    // savePropertiesInJSONFile();
+                    savePropertiesInJSONFile();
                 })
                 .catch(reject);
         })
     })
 }
 
-preprocess().then(() => {
-    console.log('done');})
+preprocess().then(() => {console.log('done');})

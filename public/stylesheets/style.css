@@ -135,6 +135,13 @@ div#trucks_graphs .cans_graph{
     fill: steelblue;
 }
 
+div#trucks_graphs .houses_graph {
+    fill: #fc8d59;
+}
+div#trucks_graphs .hours_graph {
+    fill: #f768a1;
+}
+
 div.horizontal_line {
     border-bottom: 1px solid black;
     margin: 2em 0;

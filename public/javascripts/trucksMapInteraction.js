@@ -5,11 +5,13 @@ let currentTrucksMapLayerControl;
 
 function createRoutesForWeek(week) {
     function generateColorPalette(colorGrades) {
-        let chunk = hexColorDistance('f7fcfd', '00441b').map(distance => {
+        let colors = ['#00441b', '#4d004b', '#ccebc5', '#0868ac', '#b30000', '#0570b0', '#e7298a', '#67001f', '#addd8e', '#238443', '#ec7014', '#e31a1c'];
+        let startColor = colors[Math.floor(Math.random() * colors.length)];
+        let chunk = hexColorDistance(startColor, 'ffffff').map(distance => {
             return parseInt(distance / colorGrades.length);
         });
         let result = {};
-        let lastColor = '#00441b';
+        let lastColor = startColor;
         colorGrades.forEach(grade => {
             result[parseFloat(grade)] = lastColor;
             lastColor = nextHexColor(lastColor, chunk);
@@ -32,15 +34,24 @@ function createRoutesForWeek(week) {
         return {stops: updatedStops, colorGrades: colorGrades}
     }
 
+    function createLayerGroup(stops) {
+        let markers = stops.map(point => {
+            return L.marker(point);
+        });
+        return L.layerGroup(markers);
+    }
+
     function getPolylinesForTrucks(day) {
-        return Array.from(week.activeDays[day]).map(truckNumber => {
+        return week.activeDays[day].map(truckNumber => {
             let truck = week.routes.find(route => route.vehicle === truckNumber);
             if (!truck) {
                 mapconsole.error(`TrucksMapInteraction::createRoutesForWeek: Truck ${truckNumber} not found in week.`)
             }
+            let customers = createLayerGroup(truck.stops[day]);
             let z = addZValueToStops(truck.stops[day]);
             let palette = generateColorPalette(z.colorGrades);
-            return L.hotline(z.stops, {palette: palette}).bindTooltip(truck.vehicle);
+            let hotline = L.hotline(z.stops, {palette: palette}).bindTooltip(truck.vehicle).bindPopup(truck.vehicle);
+            return L.layerGroup([customers, hotline]);
         });
     }
 
@@ -97,8 +108,10 @@ function createBarGraph(data, divID, options) {
         console.error('x & y identifiers not provided');
         return;
     }
-    let margin = {top: 20, right: 20, bottom: 30, left: 40},
-        width = 320 - margin.left - margin.right,
+    let divWidth = document.querySelector(`div${divID}`).clientWidth;
+
+    let margin = {top: 20, right: 20, bottom: 50, left: 70},
+        width = divWidth - margin.left - margin.right,
         height = 200 - margin.top - margin.bottom;
 
 // set the ranges
@@ -137,9 +150,26 @@ function createBarGraph(data, divID, options) {
         .attr("transform", "translate(0," + height + ")")
         .call(d3.axisBottom(x));
 
+    //x axis label
+    svg.append("text")
+        .attr("transform",
+            "translate(" + (width/2) + " ," +
+            (height + margin.top + 20) + ")")
+        .style("text-anchor", "middle")
+        .text(options.x);
+
     // add the y Axis
     svg.append("g")
         .call(d3.axisLeft(y));
+
+    // text label for the y axis
+    svg.append("text")
+        .attr("transform", "rotate(-90)")
+        .attr("y", 0 - margin.left)
+        .attr("x",0 - (height / 2))
+        .attr("dy", "1em")
+        .style("text-anchor", "middle")
+        .text(options.y);
 
 }
 
@@ -160,9 +190,10 @@ function addDaysControls(week, activeDays) {
             trucksMap.addLayer(currentTrucksMapLayer);
             let overlayControls = {};
             currentTrucksMapLayer.eachLayer(layer => {
-                overlayControls[layer.getTooltip()['_content']] = layer;
+                if (layer.getTooltip())
+                    overlayControls[layer.getTooltip()['_content']] = layer;
             });
-            if (currentTrucksMapLayerControl) trucksMap.removeLayer(currentTrucksMapLayerControl);
+            if (currentTrucksMapLayerControl) currentTrucksMapLayerControl.remove(trucksMap);
             currentTrucksMapLayerControl = L.control.layers(null, overlayControls);
             currentTrucksMapLayerControl.addTo(trucksMap);
         })
