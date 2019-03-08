@@ -5,17 +5,18 @@ let currentTrucksMapLayerControl;
 
 function createRoutesForWeek(week) {
     function generateColorPalette(colorGrades) {
-        let colors = ['#00441b', '#4d004b', '#ccebc5', '#0868ac', '#b30000', '#0570b0', '#e7298a', '#67001f', '#addd8e', '#238443', '#ec7014', '#e31a1c'];
-        let startColor = colors[Math.floor(Math.random() * colors.length)];
-        let chunk = hexColorDistance(startColor, 'ffffff').map(distance => {
-            return parseInt(distance / colorGrades.length);
-        });
+        if (colorGrades.length === 0) {
+            console.warn('ColorGrades is empty');
+            return;
+        }
+        let colors = colorRange();
         let result = {};
-        let lastColor = startColor;
-        colorGrades.forEach(grade => {
-            result[parseFloat(grade)] = lastColor;
-            lastColor = nextHexColor(lastColor, chunk);
-        });
+        let rainbow = new Rainbow();
+        rainbow.setNumberRange(0, colorGrades.length);
+        rainbow.setSpectrum(colors.startColor, colors.endColor);
+        for (let i = 1; i <= colorGrades.length; i++) {
+            result[parseFloat(colorGrades[i - 1])] = `#${rainbow.colorAt(i)}`;
+        }
         return result;
     }
 
@@ -51,15 +52,17 @@ function createRoutesForWeek(week) {
             let z = addZValueToStops(truck.stops[day]);
             let palette = generateColorPalette(z.colorGrades);
             let hotline = L.hotline(z.stops, {palette: palette}).bindTooltip(truck.vehicle).bindPopup(truck.vehicle);
-            return L.layerGroup([customers, hotline]);
+            // return L.layerGroup([customers, hotline]);
+            return {customers: customers, route: hotline};
         });
     }
 
     let result = {};
 
     Object.keys(week.activeDays).forEach(day => {
-        let polylines = getPolylinesForTrucks(day);
-        result[day] = L.layerGroup(polylines);
+        // let polylines = getPolylinesForTrucks(day);
+        // result[day] = L.layerGroup(polylines);
+        result[day] = getPolylinesForTrucks(day);
     });
     return result;
 }
@@ -83,8 +86,8 @@ function createMapRouteLegend() {
         let div = L.DomUtil.create('div', 'route info legend');
         div.setAttribute('style', 'background-color: #ccc');
         let header = `Routes Legend<br>`;
-        let start = `Start <i style="background: #f7fcfd"></i><br>`;
-        let end = `End <i style="background: #00441b"></i>`;
+        let start = `Start: light Color <i style="background: #f7fcfd"></i><br>`;
+        let end = `End: thick color <i style="background: #00441b"></i>`;
         div.innerHTML = header + start + end;
         return div;
     };
@@ -184,15 +187,27 @@ function addDaysControls(week, activeDays) {
         li.innerHTML = link;
         nav.insertAdjacentElement('beforeend', li);
         li.addEventListener('click', () => {
-            if (currentTrucksMapLayer) trucksMap.removeLayer(currentTrucksMapLayer);
+            if (currentTrucksMapLayer) {
+                currentTrucksMapLayer.forEach(truck => {
+                    trucksMap.removeLayer(truck.customers);
+                    trucksMap.removeLayer(truck.route);
+                });
+                // trucksMap.removeLayer(currentTrucksMapLayer);
+            }
             let weekName = week.innerHTML.replace( /(.csv)|(.xlsx)$/g, '');
+
             currentTrucksMapLayer = weeklyTrucksGeoJSON[weekName][day];
-            trucksMap.addLayer(currentTrucksMapLayer);
+            trucksMap.addLayer(currentTrucksMapLayer[0].route);
             let overlayControls = {};
-            currentTrucksMapLayer.eachLayer(layer => {
-                if (layer.getTooltip())
-                    overlayControls[layer.getTooltip()['_content']] = layer;
+            currentTrucksMapLayer.forEach(truck => {
+                let truckNumber = truck.route.getTooltip()['_content'];
+                overlayControls[truckNumber] = truck.route;
+                overlayControls[`${truckNumber} stops`] = truck.customers;
             });
+            // currentTrucksMapLayer.eachLayer(layer => {
+            //     if (layer.getTooltip())
+            //         overlayControls[layer.getTooltip()['_content']] = layer;
+            // });
             if (currentTrucksMapLayerControl) currentTrucksMapLayerControl.remove(trucksMap);
             currentTrucksMapLayerControl = L.control.layers(null, overlayControls);
             currentTrucksMapLayerControl.addTo(trucksMap);
