@@ -68,7 +68,11 @@ function createWeeklyTruckData(filename) {
                 for (let record of week) {
                     if (record.hasOwnProperty('VEHICLE') && record.VEHICLE) {
                         let truck = routes.find(route => route.vehicle === record.VEHICLE);
-                        if (!truck) truck = {vehicle: record.VEHICLE, stops: {}, cans: 0, seconds: 0};
+                        if (!truck) {
+                            if (!isNaN(parseInt(record.VEHICLE)))
+                                truck = {vehicle: parseInt(record.VEHICLE), stops: {}, cans: 0, seconds: 0};
+                            else continue;
+                        }
                         if (record.hasOwnProperty('START_DATE') && record.START_DATE && isDate(record.START_DATE)) {
                             let day = toDay(new Date(record.START_DATE).getDay());
                             if (!truck.stops.hasOwnProperty(day)) {

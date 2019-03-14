@@ -36,8 +36,8 @@ function createRoutesForWeek(week) {
     }
 
     function createLayerGroup(stops) {
-        let markers = stops.map(point => {
-            return L.marker(point);
+        let markers = stops.map((point, index) => {
+            return L.marker(point).bindPopup(`stop #${index}`);
         });
         return L.layerGroup(markers);
     }
@@ -98,82 +98,145 @@ function createMapRouteLegend() {
 function calculateCansCount(data) {
     let result = [];
 
-    for (let week in data) {
-        data[week].routes.forEach(truck => {
-            result.push({'vehicle': truck.vehicle, 'cans': truck.cans})
+    Object.keys(data).forEach(week => {
+        data[week].routes.forEach(route => {
+            if (!isNaN(route.vehicle)) {
+                let truckIndex = result.findIndex(entry => {
+                    return entry.vehicle === parseInt(route.vehicle);
+                });
+                if (truckIndex === -1) {
+                    let newEntry = {'vehicle': parseInt(route.vehicle)};
+                    newEntry[week] = parseInt(route.cans);
+                    result.push(newEntry);
+                } else {
+                    result[truckIndex][week] = parseInt(route.cans);
+                }
+            }
         })
-    }
-    return result;
+    });
+
+    return result.map(entry => {
+        let dataWeeks = Object.keys(data);
+        let entryWeeks = Object.keys(entry).slice(1);
+        let unavailableWeeks = dataWeeks.filter(week => !entryWeeks.includes(week))
+            .concat(entryWeeks.filter(week => !dataWeeks.includes(week)));
+        unavailableWeeks.forEach(week => {
+            entry[week] = 0;
+        });
+        return entry;
+    })
 }
 
 function createBarGraph(data, divID, options) {
     if (!options.hasOwnProperty('x') || !options.hasOwnProperty('y')) {
-        console.error('x & y identifiers not provided');
-        return;
+        console.warn('x or y identifiers not provided');
+        return mapconsole.error('TrucksMapInteraction::createBarGraph: Rendering error: x or y identifier not provided');
     }
+    if (data.length === 0) {
+        console.warn('Empty data');
+        return mapconsole.error('TrucksMapInteraction::createBarGraph: Rendering error: Empty data');
+    }
+
     let divWidth = document.querySelector(`div${divID}`).clientWidth;
+    let weeks = Object.keys(data[0]).slice(1);
 
     let margin = {top: 20, right: 20, bottom: 50, left: 70},
         width = divWidth - margin.left - margin.right,
         height = 200 - margin.top - margin.bottom;
 
-// set the ranges
-    let x = d3.scaleBand()
-        .range([0, width])
-        .padding(0.1);
-    let y = d3.scaleLinear()
-        .range([height, 0]);
+    let x0 = d3.scaleBand()
+        .domain(data.map(d => d[options.x]))
+        .rangeRound([margin.left, width - margin.right])
+        // .rangeRound([0, width])
+        .paddingInner(0.1);
 
-// append the svg object to the body of the page
-// append a 'group' element to 'svg'
-// moves the 'group' element to the top left margin
+    let x1 = d3.scaleBand()
+        .domain(weeks)
+        .rangeRound([0, x0.bandwidth()])
+        .padding(0.05);
+
+    let y = d3.scaleLinear()
+        .domain([0, d3.max(data, d => d3.max(weeks, key => d[key]))]).nice()
+        // .rangeRound([height - margin.bottom, margin.top]);
+        .rangeRound([0, height]);
+
+    //WARN: # of weeks could be more than COLORS available
+    let colorRange = weeks.map(w => {
+        let color = COLORS[COLORS.length - weeks.indexOf(w) - 1];
+        if (color[0] !== '#') color = color.padStart(color.length + 1, '#');
+        return color;
+    });
+
+    let color = d3.scaleOrdinal().range(colorRange);
+
+    let xAxis = g => {
+        return g.attr("transform", `translate(0,${height - margin.bottom})`)
+            .attr("transform", `translate(0,${height})`)
+            .call(d3.axisBottom(x0).tickSizeOuter(0))
+            .call(g => g.select(".domain").remove());
+    };
+
+    let yAxis = g => {
+        return g.attr("transform", `translate(${margin.left},0)`)
+        .call(d3.axisLeft(y).ticks(null, "s"))
+        .call(g => g.select(".domain").remove())
+        .call(g => g.select(".tick:last-of-type text").clone()
+            .attr("x", 3)
+            .attr("text-anchor", "start")
+            .attr("font-weight", "bold")
+            .text(options.y));
+    };
+
+    let legend = svg => {
+        const g = svg
+            .attr("transform", `translate(${width},0)`)
+            .attr("text-anchor", "end")
+            .attr("font-family", "sans-serif")
+            .attr("font-size", 10)
+            .selectAll("g")
+            .data(color.domain().slice().reverse())
+            .join("g")
+            .attr("transform", (d, i) => `translate(0,${i * 20})`);
+
+        g.append("rect")
+            .attr("x", -19)
+            .attr("width", 19)
+            .attr("height", 19)
+            .attr("fill", color);
+
+        g.append("text")
+            .attr("x", -24)
+            .attr("y", 9.5)
+            .attr("dy", "0.35em")
+            .text(d => d);
+    };
+
     let svg = d3.select(`div${divID}`).append("svg")
         .attr("width", width + margin.left + margin.right)
         .attr("height", height + margin.top + margin.bottom)
-        .append("g")
-        .attr("transform",
-            "translate(" + margin.left + "," + margin.top + ")");
 
-    // Scale the range of the data in the domains
-    x.domain(data.map(function(d) { return d[options.x]; }));
-    y.domain([0, d3.max(data, function(d) { return d[options.y]; })]);
-
-    // append the rectangles for the bar chart
-    svg.selectAll(".bar")
+    svg.append("g")
+        .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+        .selectAll("g")
         .data(data)
-        .enter().append("rect")
-        .attr("class", divID)
-        .attr("x", function(d) { return x(d[options.x]); })
-        .attr("width", x.bandwidth())
-        .attr("y", function(d) { return y(d[options.y]); })
-        .attr("height", function(d) { return height - y(d[options.y]); });
-
-    // add the x Axis
+        .join("g")
+            .attr("transform", d => `translate(${x0(d[options.x])},0)`)
+        .selectAll("rect")
+        .data(d => weeks.map(key => ({key, value: d[key]})))
+        .join("rect")
+            .attr("x", d => x1(d.key))
+            .attr("y", d => y(d.value))
+            .attr("width", x1.bandwidth())
+            .attr("height", d => y(0) - y(d.value))
+            .attr("fill", d => color(d.key));
     svg.append("g")
-        .attr("transform", "translate(0," + height + ")")
-        .call(d3.axisBottom(x));
+        .call(xAxis);
 
-    //x axis label
-    svg.append("text")
-        .attr("transform",
-            "translate(" + (width/2) + " ," +
-            (height + margin.top + 20) + ")")
-        .style("text-anchor", "middle")
-        .text(options.x);
-
-    // add the y Axis
     svg.append("g")
-        .call(d3.axisLeft(y));
+        .call(yAxis);
 
-    // text label for the y axis
-    svg.append("text")
-        .attr("transform", "rotate(-90)")
-        .attr("y", 0 - margin.left)
-        .attr("x",0 - (height / 2))
-        .attr("dy", "1em")
-        .style("text-anchor", "middle")
-        .text(options.y);
-
+    svg.append("g")
+        .call(legend);
 }
 
 function addDaysControls(week, activeDays) {
@@ -267,10 +330,10 @@ function calculateHoursCount(data) {
         .then(data => {
             let cansCount = calculateCansCount(data);
             createBarGraph(cansCount, '.cans_graph', {x: 'vehicle', y: 'cans'});
-            let housesCount = calculateHousesCount(data);
-            createBarGraph(housesCount, '.houses_graph', {x: 'vehicle', y: 'houses'});
-            let hoursCount = calculateHoursCount(data);
-            createBarGraph(hoursCount, '.hours_graph', {x: 'vehicle', y: 'hours'});
+            // let housesCount = calculateHousesCount(data);
+            // createBarGraph(housesCount, '.houses_graph', {x: 'vehicle', y: 'houses'});
+            // let hoursCount = calculateHoursCount(data);
+            // createBarGraph(hoursCount, '.hours_graph', {x: 'vehicle', y: 'hours'});
         })
         .catch(mapconsole.error)
         .catch(mapconsole.error)
