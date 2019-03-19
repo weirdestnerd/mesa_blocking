@@ -20,8 +20,6 @@ let coordProjection;
  * Define file paths
  */
 let shpFilePath = path.join(__dirname, './MesaCityZones.shp');
-let originalDbfFilePath = path.join(__dirname, './MesaCityZones.dbf');
-let dbfFilePath = path.join(__dirname, './MesaCityZonesPreprocessed.dbf');
 
 /**
  * Reads an excel file at path
@@ -31,6 +29,11 @@ let dbfFilePath = path.join(__dirname, './MesaCityZonesPreprocessed.dbf');
  */
 function getExcelData(filepath, schema) {
     return new Promise((resolve, reject) => {
+        let fileType = utils.ExtractExtension(filepath, 'xlsx');
+        if (!utils.ValidatePath(filepath, fileType)) {
+            reject('Provided path is invalid');
+        }
+        if (!schema) reject('Schema is not provided.');
         //  transform the schema to be consistent, i.e. capitalize hyphenated
         let transformedSchema = schema.map(property => {
             return property.trim().toUpperCase().replace(' ', '_');
@@ -43,11 +46,12 @@ function getExcelData(filepath, schema) {
             reject("Excel file has more than one worksheet. Parsing multiple worksheets within same file is not supported yet");
         }
 
-        let rows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {header: 1});
+        let rows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {header: 1, raw: false});
 
         /**
          * Find intersection between schema and rows. That must be the header row.
          * if no intersection, either schema is incorrect or file doesn't have header row
+         * @returns {Object} an object with index of row of the header and the indices of each property found in that row
          */
         function findHeaderRow() {
             let result = {};
@@ -61,7 +65,7 @@ function getExcelData(filepath, schema) {
                     return value;
                 });
 
-                let schemaIndex = {};
+                let schemaIndices = {};
 
                 /**
                  * Finds schema property in current row of excel sheet and keeps track of property's index
@@ -70,7 +74,7 @@ function getExcelData(filepath, schema) {
                  */
                 function findSchemaInRow(schemaProp) {
                     if (modified.includes(schemaProp)) {
-                        schemaIndex[schemaProp] = modified.indexOf(schemaProp);
+                        schemaIndices[schemaProp] = modified.indexOf(schemaProp);
                         return true;
                     }
                     return false;
@@ -80,7 +84,7 @@ function getExcelData(filepath, schema) {
                 if (transformedSchema.every(findSchemaInRow)) {
                     //  current row has every schema property.
                     //  propagate schema properties index on current row
-                    result.schemaIndex = schemaIndex;
+                    result.schemaIndices = schemaIndices;
                     //  end 'findIndex' function at current row and row's index will be header's index
                     return true;
                 }
@@ -95,25 +99,53 @@ function getExcelData(filepath, schema) {
             return result;
         }
 
-        //  get index of row in excel file containing the headers(schema) and the index of each schema property on that row
-        let headerProp = findHeaderRow();
-
+        let header = findHeaderRow();
         let data = [];
 
-        //  from the header row to the end of the file, save values on every row that has indices of the schema properties
-        rows.slice(headerProp.headerIndex + 1).forEach((row, rowIndex) => {
+        /**
+         * Adds object from rows to data[]
+         * @param {Object} row
+         * @param {number} rowIndex index of row in rows
+         */
+        function addToDataArray(row, rowIndex) {
             let dataRow = {};
-            Object.keys(headerProp.schemaIndex).forEach(schemaProp => {
-                let index = headerProp.schemaIndex[schemaProp];
+            Object.keys(header.schemaIndices).forEach(schemaProp => {
+                let index = header.schemaIndices[schemaProp];
                 if (row[index] !== undefined) {
                     dataRow[schemaProp] = row[index];
                 } else {
-                    console.warn(`Schema property '${schemaProp}' is not available at row ${rowIndex} and column ${index}.`);
+                    console.warn(`Schema property '${schemaProp}' is not available at row ${rowIndex + 1} and column ${index + 1}.`);
                     dataRow[schemaProp] = null;
                 }
             });
             data.push(dataRow);
-        });
+        }
+
+        /**
+         * Recursively split the start and end at the middle and add to data[]
+         * @param start
+         * @param end
+         */
+        function populateDataArray(start, end) {
+            if (!start || !end) {
+                reject(Error('Missing parameter'));
+            }
+            if (start === end) {
+                return addToDataArray(rows[start], start);
+            }
+            if (start > end) {
+                let difference = end - start;
+                start = start - difference;
+                end = end + difference;
+            }
+            let middle = start + Math.floor((end - start) / 2);
+
+            populateDataArray(start, middle);
+            populateDataArray(middle + 1, end);
+        }
+
+        //  from the header row to the end of the file, save values on every row that has indices of the schema properties
+        populateDataArray(header.headerIndex + 1, rows.length - 1);
         resolve(data);
     })
 }
@@ -125,7 +157,12 @@ function getExcelData(filepath, schema) {
  * @returns {Promise<Object[]>}
  */
 function getCSVData(filepath, schema) {
-    return new Promise(resolve => {
+    return new Promise((resolve, reject) => {
+        let fileType = utils.ExtractExtension(filepath, 'csv');
+        if (!utils.ValidatePath(filepath, fileType)) {
+            reject('Provided path is invalid');
+        }
+        if (!schema) reject('Schema is not provided.');
         let data = [];
         let csvCustomerSchema = {};
         let csvSchema = [];
@@ -183,14 +220,15 @@ function getCSVData(filepath, schema) {
 
 /**
  * Supports reading from excel and csv files
- * @param {string} filepath path to file
+ * @param {string} filename name of file in ./data directory. if file is in sub-directory of ./data, precede the filename with sub-directory name. Include file extension in filename.
  * @param {Object} schema schema specifying keys of key-value result to return
  * @returns {Promise<Object[]>}
  */
-function readFile(filepath, schema) {
+function readFile(filename, schema) {
     return new Promise((resolve, reject) => {
-        let type = utils.ExtractExtension(filepath, 'csv') || utils.ExtractExtension(filepath, 'xlsx');
-        if (!utils.ValidatePath(filepath, type)) {
+        let filepath = path.join(__dirname, filename);
+        let type = utils.ExtractExtension(filename, 'csv') || utils.ExtractExtension(filename, 'xlsx');
+        if (!utils.ValidatePath(filename, type)) {
             reject('Provided path is invalid');
         }
         switch (type) {
@@ -214,7 +252,7 @@ function readDatabase() {return}
  * Read .prj file for projection definition.
  * @returns {Promise<any>}
  */
-function getProjection() {
+function getMesaCityProjection() {
     return new Promise((resolve, reject) => {
         //  to avoid reading file every time, save content in a variable
         if (coordProjection) resolve(coordProjection);
@@ -275,13 +313,20 @@ function transformFeatureCoordinates(feature) {
 
 /**
  * Read ShapeFile of zone and integrate with data in .dbf file
- * @param {boolean} preprocessed if true, preprocessed zone is returned
+ * @param {string} [preprocessed] if provided, preprocessed zone of provided string is fetched
  * @returns {Promise<any>}
  */
 function getZones(preprocessed) {
     return new Promise((resolve, reject) => {
         if (zoneGeoJSON) resolve(zoneGeoJSON);
-        let filePath = preprocessed ? dbfFilePath : originalDbfFilePath;
+        if (preprocessed && (typeof preprocessed !== 'string')) {
+            reject('Preprocessed value must be a string');
+        }
+        if (preprocessed && preprocessed.length === 0) {
+            reject('Can not get preprocessed zone for empty value');
+        }
+        preprocessed = preprocessed ? utils.Camelcase(preprocessed) : '';
+        let filePath = path.join(__dirname, `./MesaCityZones${preprocessed}.dbf`);
         Shapefile.read(shpFilePath, filePath)
             .then(geoJSON => {
                 zoneGeoJSON = geoJSON;
@@ -296,13 +341,19 @@ function getZones(preprocessed) {
 
 /**
  * Reads from file the geoJSON of zone and transforms the coordinates to latitude and longitude
- * @param {boolean} preprocessed if true, preprocessed zone is returned
+ * @param {string} [preprocessed] if provided, preprocessed zone of provided string is fetched for the geoJSON
  * @returns {Promise<any>}
  */
 function readGeoJSON(preprocessed) {
-    return new Promise(resolve => {
+    return new Promise((resolve, reject) => {
         if (zoneGeoJSON) resolve(zoneGeoJSON);
-        Promise.all([getProjection(), getZones(preprocessed)])
+        if (preprocessed && (typeof preprocessed !== 'string')) {
+            reject('Preprocessed value must be a string');
+        }
+        if (preprocessed && preprocessed.length === 0) {
+            reject('Can not get preprocessed zone for empty value');
+        }
+        Promise.all([getMesaCityProjection(), getZones(preprocessed)])
             .then(() => {
                 zoneGeoJSON.features = zoneGeoJSON.features.map(feature => {
                     return transformFeatureCoordinates(feature);
@@ -318,21 +369,25 @@ function readGeoJSON(preprocessed) {
  * @returns {Promise<any>}
  */
 function readCustomersFile(schema) {
-    let filePath = path.join(__dirname, '/allcustomers.csv');
     return new Promise((resolve, reject) => {
-        readFile(filePath, schema)
+        readFile('allcustomers.csv', schema)
             .then(resolve)
             .catch(reject);
     })
 }
 
+/**
+ * Reads JSON file
+ * @param {string} filename name of JSON file in ./data directory. if file is in sub-directory of ./data, precede the filename with sub-directory name. Include file extension in filename.
+ * @returns {Promise<any>}
+ */
 function readJSON(filename) {
     return new Promise((resolve, reject) => {
         if(!utils.ExtractExtension(filename, 'json')) {
             reject('Provided file is not a JSON file')
         }
         let filepath = path.join(__dirname, filename);
-        jsonfile.readFile(filepath).then(resolve).catch(reject);
+        jsonfile.readFileSync(filepath).then(resolve).catch(reject);
     });
 }
 
@@ -340,6 +395,6 @@ module.exports = {
     getWeeklyDataFromFile: readFile,
     getWeeklyDataFromDatabase: readDatabase,
     getAllCustomers: readCustomersFile,
-    getGeoJSONFromFile: readGeoJSON,
+    getCityGeoJSON: readGeoJSON,
     getJSONFromFile: readJSON
 };
