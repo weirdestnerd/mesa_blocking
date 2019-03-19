@@ -341,6 +341,14 @@ function camelcase(value) {
     return words.join('');
 }
 
+/**
+ * Checks if value is in camelcase format
+ * @param value
+ * @returns {boolean}
+ */
+function isCamelCase(value) {
+    return value === camelcase(value);
+}
 
 /**
  * Validates filenames and rename filenames if necessary
@@ -372,12 +380,18 @@ function validateFilenames(filenames, callback) {
         callback('Rename filenames that are longer than 8 letters')
     }
 
-    //TODO:
-    // filenames.forEach(filename => {
-    //     let oldPath = path.join(__dirname, '../data/weeks/' + filename);
-    //     let newPath = path.join(__dirname, '../data/weeks/' + camelcase(filename));
-    //     fs.renameSync(oldPath, newPath);
-    // });
+    filenames = filenames.map(name => {
+        if (!isCamelCase(name)) {
+            let oldPath = path.join(__dirname, '../data/weeks/' + name);
+            let newPath = path.join(__dirname, '../data/weeks/' + camelcase(name));
+            fs.renameSync(oldPath, newPath, error => {
+                if (error) callback(error)
+            });
+            return camelcase(name);
+        }
+        return name;
+    });
+
     return filenames;
 }
 
@@ -414,6 +428,34 @@ function validatePath(path, type) {
     return path;
 }
 
+/**
+ * An instance of timer.
+ * @param {number} [startTime] In milliseconds, the time when timer starts from
+ * @constructor
+ */
+function Timer(startTime) {
+    let timer = startTime ? startTime : undefined;
+
+    this.startTimer = () => {
+        if (timer) {
+            console.warn('Timer has already started');
+            return this;
+        }
+        timer = Date.now();
+        return this;
+    };
+
+    this.stopTimer = () => {
+        if (!timer) {
+            console.error('Timer has not been started yet');
+            return null;
+        }
+        let end = Math.floor((Date.now() - timer) / 1000);
+        timer = undefined;
+        return end;
+    }
+}
+
 module.exports = {
     Directions: Directions,
     Coord: Coord,
@@ -427,5 +469,6 @@ module.exports = {
     Camelcase: camelcase,
     ValidateFilenames: validateFilenames,
     ExtractExtension: extractExtension,
-    ValidatePath: validatePath
+    ValidatePath: validatePath,
+    Timer: Timer
 };
