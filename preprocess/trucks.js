@@ -1,31 +1,28 @@
+/**
+ * Module dependencies
+ */
 const dataProvider = require('../data/provider');
 const utils = require('../utils');
 const jsonfile = require('jsonfile');
 const path = require('path');
 const fs = require('fs');
 
-let trucksJSON = {};
-/*
-{ type: 'Feature',
-  properties:
-   { OBJECTID: 1,
-     GREEN_SVC: 'THURSDAY',
-     Map_Name: 'HG84',
-     GreenBarre: 'HG84 (THURSDAY)',
-     FirstLoads: 'RAD',
-     LastLoads: 'RAD',
-     Shape_Leng: 71507.3357106,
-     Shape_Area: 87510541.3132 },
-  geometry: { type: 'Polygon', coordinates: [ [Array] ] } }
-
+/**
+ * Global dependencies
  */
+let trucksJSON = {};
 
 /**
  * Populates an object with the properties of truck activities per week
- * @param filenames Names of the files for all the weeks to consider
+ * @param {string} filename name of file in ./data directory. if file is in sub-directory of ./data, precede the filename with sub-directory name. Include file extension in filename.
  * @returns {Promise<any>}
  */
 function createWeeklyTruckData(filename) {
+    /**
+     * Convert digit to day of the week
+     * @param {number} day
+     * @returns {string}
+     */
     function toDay(day) {
         switch (day) {
             case 0:
@@ -43,6 +40,7 @@ function createWeeklyTruckData(filename) {
             case 6:
                 return 'Saturday';
         }
+        return '';
     }
 
     function isDate(value) {
@@ -50,13 +48,10 @@ function createWeeklyTruckData(filename) {
     }
 
     return new Promise((resolve, reject) => {
-        let filePath = path.join(__dirname, '../data/weeks/' + filename);
-        let weekName = filename.replace(/(.csv)|(.xlsx)$/g, '');
-        console.log('processing ' + weekName);
+        let weekName = filename.replace('weeks/', '').replace(/(.csv)|(.xlsx)$/g, '');
         trucksJSON[weekName] = {};
-        dataProvider.getWeeklyDataFromFile(filePath, ['vehicle', 'start date', 'can count', 'latitude', 'longitude', 'total seconds'])
+        dataProvider.getWeeklyDataFromFile(filename, ['vehicle', 'start date', 'can count', 'latitude', 'longitude', 'total seconds'])
             .then(week => {
-                // when start time toggles from pm to am, it's new day.
                 if (!week || week.length === 0) {
                     console.warn(`No record for ${filename}`);
                     return
@@ -66,12 +61,11 @@ function createWeeklyTruckData(filename) {
                 let activeDays = {};
 
                 for (let record of week) {
-                    if (record.hasOwnProperty('VEHICLE') && record.VEHICLE) {
-                        let truck = routes.find(route => route.vehicle === record.VEHICLE);
+                    if (record.hasOwnProperty('VEHICLE') && record.VEHICLE && !isNaN(parseInt(record.VEHICLE))) {
+                        let vehilceNum = parseInt(record.VEHICLE);
+                        let truck = routes.find(route => route.vehicle === vehilceNum);
                         if (!truck) {
-                            if (!isNaN(parseInt(record.VEHICLE)))
-                                truck = {vehicle: parseInt(record.VEHICLE), stops: {}, cans: 0, seconds: 0};
-                            else continue;
+                            truck = {vehicle: vehilceNum, stops: {}, cans: 0, seconds: 0};
                         }
                         if (record.hasOwnProperty('START_DATE') && record.START_DATE && isDate(record.START_DATE)) {
                             let day = toDay(new Date(record.START_DATE).getDay());
@@ -80,11 +74,11 @@ function createWeeklyTruckData(filename) {
                             }
                             truck.stops[day].push([record.LATITUDE, record.LONGITUDE]);
                             if (activeDays.hasOwnProperty(day)) {
-                                if (!activeDays[day].includes(record.VEHICLE)) {
-                                    activeDays[day].push(record.VEHICLE);
+                                if (!activeDays[day].includes(vehilceNum)) {
+                                    activeDays[day].push(vehilceNum);
                                 }
                             } else {
-                                activeDays[day] = [record.VEHICLE];
+                                activeDays[day] = [vehilceNum];
                             }
                         }
                         if (record.hasOwnProperty('CAN_COUNT') && record.CAN_COUNT) {
@@ -93,7 +87,7 @@ function createWeeklyTruckData(filename) {
                         if (record.hasOwnProperty('TOTAL_SECONDS') && record.TOTAL_SECONDS)
                             truck.seconds += parseInt(record.TOTAL_SECONDS);
 
-                        let truckIndex = routes.findIndex(route => route.vehicle === record.VEHICLE);
+                        let truckIndex = routes.findIndex(route => route.vehicle === vehilceNum);
                         if (truckIndex < 0) {
                             routes.push(truck);
                         } else routes[truckIndex] = truck;
@@ -101,6 +95,7 @@ function createWeeklyTruckData(filename) {
                 }
                 trucksJSON[weekName].routes = routes;
                 trucksJSON[weekName].activeDays = activeDays;
+                console.log(`Done with ${weekName} with ${week.length} entries`);
                 resolve();
             })
             .catch(reject);
@@ -120,12 +115,11 @@ function preprocess() {
     return new Promise((resolve, reject) => {
         fs.readdir(path.join(__dirname, '../data/weeks/'), (error, filenames) => {
             if (error) reject(error);
-            filenames = utils.ValidateFilenames(filenames, error => {
-                if (error) reject(error)
-            });
+
             let apply = filenames.map(filename => {
-                return createWeeklyTruckData(filename);
+                return createWeeklyTruckData(`weeks/${filename}`);
             });
+
             Promise.all(apply)
                 .then(() => {
                     savePropertiesInJSONFile();
@@ -135,4 +129,7 @@ function preprocess() {
     })
 }
 
-preprocess().then(() => {console.log('done');})
+let timer = new utils.Timer().startTimer();
+preprocess().then(() => {
+    console.log(`Done in ${timer.stopTimer()} seconds`);
+}).catch(console.error);
