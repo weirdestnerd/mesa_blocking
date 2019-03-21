@@ -14,6 +14,8 @@ const HashMap = require('hashmap');
  */
 let zoneGeoJSON;
 let latLngRoute = new HashMap();
+let isFirstToFinish = true;
+let weeks;
 
 /**
  * Finds the index of the zone that coordinate belongs to
@@ -43,7 +45,7 @@ function findIndexOfRoute(route) {
 /**
  *  Assign customer to zone by finding the zone that customer's lat & lng belongs to.
  */
-function assignCustomerToZone2() {
+function assignCustomerToZone() {
     return new Promise((resolve, reject) => {
         dataProvider.getAllCustomers(['latitude', 'longitude', 'route'])
             .then(allCustomers => {
@@ -102,11 +104,10 @@ function assignWeekDataToZone(filename) {
 /**
  * Calculate density for each zone
  */
-//TODO: move to front end
-function calculateZoneDensity(filenames) {
+function calculateZoneDensity() {
     zoneGeoJSON.features.forEach(feature => {
         let customerCount = feature.properties.customerCount;
-        for (let weekName of filenames) {
+        for (let weekName of weeks) {
             let weekCount = feature.properties[weekName];
             let density;
             //  if there are customers and there are pick ups
@@ -160,21 +161,34 @@ function preprocess() {
         dataProvider.getCityGeoJSON()
             .then(geoJSON => {
                 zoneGeoJSON = geoJSON;
-            })
-            .then(() => {
-                assignCustomerToZone2();
+                //  if assigning all customer data finishes first then let assignWeekDataToZone() save to dbf
+                assignCustomerToZone()
+                    .then(() => {
+                        if (isFirstToFinish) {
+                            isFirstToFinish = false;
+                        } else {
+                            calculateZoneDensity();
+                            savePropertiesInDBF();
+                        }
+                    });
             })
             .then(() => {
                 fs.readdir(path.join(__dirname, '../data/weeks/'), (error, filenames) => {
                     if (error) reject(error);
-
+                    weeks = filenames;
                     let apply = filenames.map(filename => {
                         return assignWeekDataToZone(`weeks/${filename}`);
                     });
 
+                    //  if assigning all week data finishes first then let assignCustomerToZone() save to dbf
                     Promise.all(apply)
                         .then(() => {
-                            savePropertiesInDBF();
+                            if (isFirstToFinish) {
+                                isFirstToFinish = false;
+                            } else {
+                                calculateZoneDensity();
+                                savePropertiesInDBF();
+                            }
                             resolve(zoneGeoJSON);
                         })
                         .catch(reject);
