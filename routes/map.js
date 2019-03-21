@@ -14,7 +14,7 @@ router.get('/', function(req, res, next) {
         }
         files = files.filter(file => !file.includes('~$'));
         files = files.map(file => {return camelcase(file)});
-        res.render('map', { title: 'Map', files: files });
+        res.render('map', { title: 'Map', available_weeks: files });
     });
 });
 
