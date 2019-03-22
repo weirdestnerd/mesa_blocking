@@ -387,7 +387,7 @@ function readJSON(filename) {
             reject('Provided file is not a JSON file')
         }
         let filepath = path.join(__dirname, filename);
-        jsonfile.readFileSync(filepath).then(resolve).catch(reject);
+        jsonfile.readFile(filepath).then(resolve).catch(reject);
     });
 }
 
