@@ -1,2 +1,3 @@
 let map = initMap({divID: 'map'});
-loadDensityControl(map);
+new DensityControl().load(map);
+new TruckRoutesControl().load(map);
