@@ -3,7 +3,8 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "start": "node ./bin/www"
+    "start": "node ./bin/www",
+    "prestart": "node ./bin/precompile"
   },
   "dependencies": {
     "cookie-parser": "~1.4.3",
@@ -23,7 +24,6 @@
     "read-excel-file": "^2.0.6",
     "shapefile": "^0.6.6",
     "shpjs": "^3.4.3",
-    "socket.io": "^2.1.1",
     "xlsx": "^0.14.1"
   }
 }
