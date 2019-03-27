@@ -48,7 +48,7 @@ function createWeeklyTruckData(filename) {
     }
 
     return new Promise((resolve, reject) => {
-        let weekName = filename.replace('weeks/', '').replace(/(.csv)|(.xlsx)$/g, '');
+        let weekName = filename.replace('weeks/', '');
         trucksJSON[weekName] = {};
         dataProvider.getWeeklyDataFromFile(filename, ['vehicle', 'start date', 'can count', 'latitude', 'longitude', 'total seconds'])
             .then(week => {
@@ -106,7 +106,11 @@ function createWeeklyTruckData(filename) {
  * Save object in JSON file
  */
 function savePropertiesInJSONFile() {
-    let filepath = path.join(__dirname, '../data/TrucksData.json');
+    let filepath = path.join(__dirname, '../data/json');
+    if(!fs.existsSync(filepath)) {
+        fs.mkdirSync(filepath)
+    }
+    filepath = path.join(__dirname, '../data/json/TrucksAndRoutes.json');
     jsonfile.writeFile(filepath, trucksJSON)
         .catch(console.error);
 }
@@ -123,13 +127,20 @@ function preprocess() {
             Promise.all(apply)
                 .then(() => {
                     savePropertiesInJSONFile();
+                    resolve();
                 })
                 .catch(reject);
         })
     })
 }
 
-let timer = new utils.Timer().startTimer();
-preprocess().then(() => {
-    console.log(`Done in ${timer.stopTimer()} seconds`);
-}).catch(console.error);
+module.exports = {
+    run: preprocess
+};
+
+if (process.mainModule.filename === __filename) {
+    let timer = new utils.Timer().startTimer();
+    preprocess().then(() => {
+        console.log(`Done in ${timer.stopTimer()} seconds`);
+    }).catch(console.error);
+}

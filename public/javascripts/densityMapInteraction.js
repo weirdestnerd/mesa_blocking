@@ -15,8 +15,13 @@ function DensityControl() {
         100: '#bd0026'
     };
 
-// source: https://bl.ocks.org/gordlea/27370d1eea8464b04538e6d8ced39e89
-    function createGraph(zoneDensities) {
+    /**
+     * Create bar graph for provided density
+     * source: https://bl.ocks.org/gordlea/27370d1eea8464b04538e6d8ced39e89
+     * @param zoneDensities
+     * @returns {SVGSVGElement}
+     */
+    function createBarGraph(zoneDensities) {
         let weekNames = Object.keys(zoneDensities);
         let densities = Object.values(zoneDensities);
         let maxDensity = densities.reduce(
@@ -81,6 +86,12 @@ function DensityControl() {
         return svg;
     }
 
+    /**
+     * Bind pop up to layer
+     * @param layer
+     * @param feature
+     * @param weekName
+     */
     function bindPopupTo(layer, feature, weekName) {
         let customerCount = feature.properties.customer;
         let weekCount = feature.properties[weekName];
@@ -89,9 +100,15 @@ function DensityControl() {
         layer.bindPopup(feature.properties.popUp);
     }
 
+    /**
+     * Bind bar graph as tooltip to specified layer
+     * @param layer
+     * @param feature
+     * @param allWeeks
+     */
     function bindTooltipTo(layer, feature, allWeeks) {
         // get density for all weeks
-        let allWeekNames = allWeeks.map(week => `%${week.slice(0, 7)}`);
+        let allWeekNames = allWeeks.map(week => `%${week}`);
         let zoneDensities = {};
         allWeekNames.forEach(week => {
             if (feature.properties[week] >= 0){
@@ -106,12 +123,16 @@ function DensityControl() {
 
         // don't draw graph if all densities for layer are invalid
         if (!Object.values(zoneDensities).every(isInvalidDensity)){
-            let densityGraph = createGraph(zoneDensities);
+            let densityGraph = createBarGraph(zoneDensities);
             layer.bindTooltip(densityGraph);
         }
     }
 
-// get the color for the range that density falls into
+    /**
+     * Get the color for the range that density falls into
+     * @param {Number} density
+     * @returns {string}
+     */
     function getColor(density) {
         let gradeKeys = Object.keys(densityColorGrades);
         // should be sorted already, but just in case the object is tampered re-sort
@@ -125,6 +146,10 @@ function DensityControl() {
         return key ? densityColorGrades[key] : '#800026';
     }
 
+    /**
+     * Create density legend and add to map
+     * @param map
+     */
     function createMapDensityLegend(map) {
         let legend = L.control({position: 'bottomright'});
 
@@ -156,34 +181,50 @@ function DensityControl() {
         legend.addTo(map);
     }
 
-    function createGeoJSONForWeek(week, allWeeks, data) {
-        //WARN: property headers are only 8 letters long due to dbf storage limit
-        let weekName = week.slice(0, 8);
+    /**
+     * Create leaflet geoJSON for week
+     * @param weekname
+     * @param allWeeks
+     * @param {[Object]} data Data for specified week
+     */
+    function createGeoJSONForWeek(weekname, allWeeks, data) {
         let weekGeoJSON = L.geoJSON(data, {
             onEachFeature: function (feature, layer) {
-                bindPopupTo(layer, feature, weekName);
+                bindPopupTo(layer, feature, weekname);
                 bindTooltipTo(layer, feature, allWeeks);
-            }
+            },
+            pane: 'density'
         });
         weekGeoJSON.setStyle(function (feature) {
-            let density = parseInt(feature.properties['%' + weekName.slice(0, 7)]);
+            let density = parseInt(feature.properties['%' + weekname]);
             let style = {fill: true, fillOpacity: 0.8};
             if (density < 0) style.fillOpacity = 0;
             else style.fillColor = getColor(density);
             return style;
         });
-        weeklyDensityGeoJSON[week] = weekGeoJSON;
+        weeklyDensityGeoJSON[weekname] = weekGeoJSON;
     }
 
-    function addButtonToControl(div) {
+    /**
+     * Add element to density control
+     * @param element
+     */
+    function addElementToControl(element) {
         document.querySelector('div#density_control div.preloader').classList.add('hide');
-        document.querySelector('div#density_control').insertAdjacentElement('beforeend', div);
+        document.querySelector('div#density_control').insertAdjacentElement('beforeend', element);
     };
 
-    function addListenerToButton(div, map, week) {
-        div.addEventListener('click', e => {
-            if (div.classList.contains('active')) {
-                div.classList.remove('active');
+    /**
+     * Add interaction listener to button. Toggle button active on click.
+     * @param button
+     * @param map
+     * @param week
+     * @returns {*}
+     */
+    function addListenerToButton(button, map, week) {
+        button.addEventListener('click', e => {
+            if (button.classList.contains('active')) {
+                button.classList.remove('active');
                 map.removeLayer(currentDensityMapLayer);
             } else {
                 [].slice
@@ -191,33 +232,40 @@ function DensityControl() {
                     .forEach(weekButton => {
                         weekButton.classList.remove('active');
                     });
-                div.classList.add('active');
+                button.classList.add('active');
                 if (currentDensityMapLayer) map.removeLayer(currentDensityMapLayer);
                 currentDensityMapLayer = weeklyDensityGeoJSON[week];
                 map.addLayer(currentDensityMapLayer);
             }
         });
-        return div;
+        return button;
     };
 
+    /**
+     * Create button for week that will added as control on the interface
+     * @param {String} week Week name (including extension)
+     * @param map
+     */
     function createButtonForWeek(week, map) {
         let div = document.createElement('div');
         div.className = 'chip';
         div.innerText = week.replace(/(.csv)|(.xlsx)$/g, '');
         div = addListenerToButton(div, map, week);
-        addButtonToControl(div);
+        addElementToControl(div);
     }
 
     this.load = map => {
         mapconsole.message('Getting Data on Zone Density ...');
-        getDensityGeoJSON()
-            .then(densityData => {
-                let allWeeks = [].slice.call(document.querySelectorAll('#helper.available_weeks pre')).map(weekDOM => {
-                    return weekDOM.innerText;
-                });
+        let allWeeks = [].slice.call(document.querySelectorAll('#helper.available_weeks pre')).map(weekDOM => {
+            return weekDOM.innerText;
+        });
 
+        utils.getData('density')
+            .then(data => {
+                map.createPane('density');
+                map.getPane('density').style.zIndex = 400;
                 for (let week of allWeeks) {
-                    createGeoJSONForWeek(week, allWeeks, densityData);
+                    createGeoJSONForWeek(week, allWeeks, data);
                     createButtonForWeek(week, map);
                 }
                 createMapDensityLegend(map);
@@ -225,5 +273,4 @@ function DensityControl() {
             })
             .catch(mapconsole.error);
     };
-
 }

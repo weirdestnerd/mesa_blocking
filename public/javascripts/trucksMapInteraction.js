@@ -9,7 +9,7 @@ function TruckRoutesControl() {
                 console.warn('ColorGrades is empty');
                 return;
             }
-            let colors = colorRange();
+            let colors = utils.colorRange();
             let result = {};
             let rainbow = new Rainbow();
             rainbow.setNumberRange(0, colorGrades.length);
@@ -51,8 +51,7 @@ function TruckRoutesControl() {
                 let customers = createLayerGroup(truck.stops[day]);
                 let z = addZValueToStops(truck.stops[day]);
                 let palette = generateColorPalette(z.colorGrades);
-                let hotline = L.hotline(z.stops, {palette: palette}).bindTooltip(truck.vehicle).bindPopup(truck.vehicle);
-                // return L.layerGroup([customers, hotline]);
+                let hotline = L.hotline(z.stops, {pane: 'routes', palette: palette}).bindTooltip(truck.vehicle).bindPopup(truck.vehicle);
                 return {customers: customers, route: hotline};
             });
         }
@@ -62,9 +61,13 @@ function TruckRoutesControl() {
         Object.keys(weekData.activeDays).forEach(day => {
             result[day] = getPolylinesForTrucks(day);
         });
-        weeklyTrucksGeoJSON[week] = result;
+        weeklyTrucksGeoJSON[week.replace(/(.csv)|(.xlsx)$/g, '')] = result;
     }
 
+    /**
+     * Create route legend and add to map
+     * @param map
+     */
     function createMapRouteLegend(map) {
         let legend = L.control({position: 'bottomright'});
 
@@ -81,241 +84,35 @@ function TruckRoutesControl() {
         legend.addTo(map);
     }
 
-    function calculateCansCount(data) {
-        let result = [];
-
-        Object.keys(data).forEach(week => {
-            data[week].routes.forEach(route => {
-                if (!isNaN(route.vehicle)) {
-                    let truckIndex = result.findIndex(entry => {
-                        return entry.vehicle === parseInt(route.vehicle);
-                    });
-                    if (truckIndex === -1) {
-                        let newEntry = {'vehicle': parseInt(route.vehicle)};
-                        newEntry[week] = parseInt(route.cans);
-                        result.push(newEntry);
-                    } else {
-                        result[truckIndex][week] = parseInt(route.cans);
-                    }
-                }
-            })
-        });
-
-        return result.map(entry => {
-            let dataWeeks = Object.keys(data);
-            let entryWeeks = Object.keys(entry).slice(1);
-            let unavailableWeeks = dataWeeks.filter(week => !entryWeeks.includes(week))
-                .concat(entryWeeks.filter(week => !dataWeeks.includes(week)));
-            unavailableWeeks.forEach(week => {
-                entry[week] = 0;
-            });
-            return entry;
-        })
-    }
-
-    function createBarGraph(data, divID, options) {
-        if (!options.hasOwnProperty('x') || !options.hasOwnProperty('y')) {
-            console.warn('x or y identifiers not provided');
-            return mapconsole.error('TrucksMapInteraction::createBarGraph: Rendering error: x or y identifier not provided');
-        }
-        if (data.length === 0) {
-            console.warn('Empty data');
-            return mapconsole.error('TrucksMapInteraction::createBarGraph: Rendering error: Empty data');
-        }
-
-        let divWidth = document.querySelector(`div${divID}`).clientWidth;
-        let weeks = Object.keys(data[0]).slice(1);
-
-        let margin = {top: 20, right: 20, bottom: 50, left: 70},
-            width = divWidth - margin.left - margin.right,
-            height = 200 - margin.top - margin.bottom;
-
-        let x0 = d3.scaleBand()
-            .domain(data.map(d => d[options.x]))
-            .rangeRound([margin.left, width - margin.right])
-            // .rangeRound([0, width])
-            .paddingInner(0.1);
-
-        let x1 = d3.scaleBand()
-            .domain(weeks)
-            .rangeRound([0, x0.bandwidth()])
-            .padding(0.05);
-
-        let y = d3.scaleLinear()
-            .domain([0, d3.max(data, d => d3.max(weeks, key => d[key]))]).nice()
-            // .rangeRound([height - margin.bottom, margin.top]);
-            .rangeRound([0, height]);
-
-        //WARN: # of weeks could be more than COLORS available
-        let colorRange = weeks.map(w => {
-            let color = COLORS[COLORS.length - weeks.indexOf(w) - 1];
-            if (color[0] !== '#') color = color.padStart(color.length + 1, '#');
-            return color;
-        });
-
-        let color = d3.scaleOrdinal().range(colorRange);
-
-        let xAxis = g => {
-            return g.attr("transform", `translate(0,${height - margin.bottom})`)
-                .attr("transform", `translate(0,${height})`)
-                .call(d3.axisBottom(x0).tickSizeOuter(0))
-                .call(g => g.select(".domain").remove());
-        };
-
-        let yAxis = g => {
-            return g.attr("transform", `translate(${margin.left},0)`)
-                .call(d3.axisLeft(y).ticks(null, "s"))
-                .call(g => g.select(".domain").remove())
-                .call(g => g.select(".tick:last-of-type text").clone()
-                    .attr("x", 3)
-                    .attr("text-anchor", "start")
-                    .attr("font-weight", "bold")
-                    .text(options.y));
-        };
-
-        let legend = svg => {
-            const g = svg
-                .attr("transform", `translate(${width},0)`)
-                .attr("text-anchor", "end")
-                .attr("font-family", "sans-serif")
-                .attr("font-size", 10)
-                .selectAll("g")
-                .data(color.domain().slice().reverse())
-                .join("g")
-                .attr("transform", (d, i) => `translate(0,${i * 20})`);
-
-            g.append("rect")
-                .attr("x", -19)
-                .attr("width", 19)
-                .attr("height", 19)
-                .attr("fill", color);
-
-            g.append("text")
-                .attr("x", -24)
-                .attr("y", 9.5)
-                .attr("dy", "0.35em")
-                .text(d => d);
-        };
-
-        let svg = d3.select(`div${divID}`).append("svg")
-            .attr("width", width + margin.left + margin.right)
-            .attr("height", height + margin.top + margin.bottom)
-
-        svg.append("g")
-            .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
-            .selectAll("g")
-            .data(data)
-            .join("g")
-            .attr("transform", d => `translate(${x0(d[options.x])},0)`)
-            .selectAll("rect")
-            .data(d => weeks.map(key => ({key, value: d[key]})))
-            .join("rect")
-            .attr("x", d => x1(d.key))
-            .attr("y", d => y(d.value))
-            .attr("width", x1.bandwidth())
-            .attr("height", d => y(0) - y(d.value))
-            .attr("fill", d => color(d.key));
-        svg.append("g")
-            .call(xAxis);
-
-        svg.append("g")
-            .call(yAxis);
-
-        svg.append("g")
-            .call(legend);
-    }
-
-    function addDaysControls(week, activeDays) {
-        let nav = document.querySelector('div#trucks_days_controls ul.nav.nav-pills');
-        nav.innerHTML = '';
-
-        activeDays.forEach(day => {
-            let li = document.createElement('li');
-            li.className = 'nav-item';
-            let link = `<a class="nav-link" id="${day}" data-toggle="pill" href="" role="tab" aria-controls="pills-home" aria-selected="true">${day}</a>`;
-            li.innerHTML = link;
-            nav.insertAdjacentElement('beforeend', li);
-            li.addEventListener('click', () => {
-                if (currentTrucksMapLayer) {
-                    currentTrucksMapLayer.forEach(truck => {
-                        trucksMap.removeLayer(truck.customers);
-                        trucksMap.removeLayer(truck.route);
-                    });
-                    // trucksMap.removeLayer(currentTrucksMapLayer);
-                }
-                let weekName = week.innerHTML.replace( /(.csv)|(.xlsx)$/g, '');
-
-                currentTrucksMapLayer = weeklyTrucksGeoJSON[weekName][day];
-                trucksMap.addLayer(currentTrucksMapLayer[0].route);
-                let overlayControls = {};
-                currentTrucksMapLayer.forEach(truck => {
-                    let truckNumber = truck.route.getTooltip()['_content'];
-                    overlayControls[truckNumber] = truck.route;
-                    overlayControls[`${truckNumber} stops`] = truck.customers;
-                });
-                // currentTrucksMapLayer.eachLayer(layer => {
-                //     if (layer.getTooltip())
-                //         overlayControls[layer.getTooltip()['_content']] = layer;
-                // });
-                if (currentTrucksMapLayerControl) currentTrucksMapLayerControl.remove(trucksMap);
-                currentTrucksMapLayerControl = L.control.layers(null, overlayControls);
-                currentTrucksMapLayerControl.addTo(trucksMap);
-            })
-        });
-    }
-
-    function calculateHousesCount(data) {
-        let result = [];
-
-        for (let week in data) {
-            data[week].routes.forEach(truck => {
-                let totalHouses = Object.keys(truck.stops).reduce( (acc, onDay) => {
-                    return acc + truck.stops[onDay].length;
-                }, 0);
-                result.push({'vehicle': truck.vehicle, 'houses': totalHouses})
-            })
-        }
-        return result;
-    }
-
-    function calculateHoursCount(data) {
-        let result = [];
-
-        for (let week in data) {
-            data[week].routes.forEach(truck => {
-                let hours = Math.floor(truck.seconds / 3600);
-                result.push({'vehicle': truck.vehicle, 'hours': hours})
-            })
-        }
-        return result;
-    }
-
-    function addSelectionListenerToTrucksWeek(week, activeDays, allWeeksButton) {
-        week.addEventListener('click', () => {
-            allWeeksButton.forEach(otherWeek => {
-                otherWeek.classList.remove('active');
-            });
-            week.classList.add('active');
-            document.querySelector('div#trucks_map_controls button#week_selection').innerHTML = week.innerHTML;
-            addDaysControls(week, activeDays);
-        });
-        document.querySelector('div#trucks_map_controls #week_selection').classList.remove('disabled');
-    }
-
+    /**
+     * Remove current trucks and routes layer on map
+     * @param map
+     */
     function removeCurrentLayerFromMap(map) {
         currentTrucksMapLayer.forEach(truck => {
             map.removeLayer(truck.customers);
             map.removeLayer(truck.route);
         });
+        currentTrucksMapLayerControl.remove()
     }
 
+    /**
+     * Create button for specified week and add click listener
+     * @param week
+     * @param map
+     */
     function createButtonForWeek(week, map) {
         let button = document.createElement('div');
         button.className = 'chip';
-        button.innerText = week;
+        button.innerText = week.replace(/(.csv)|(.xlsx)$/g, '');
         button.addEventListener('click', e => {
             if (button.classList.contains('active')) {
                 button.classList.remove('active');
+                [].slice
+                    .call(document.querySelectorAll('div#trucks_control div.days_control div.chip'))
+                    .forEach(weekButton => {
+                        weekButton.classList.remove('active');
+                    });
                 removeCurrentLayerFromMap(map)
             } else {
                 [].slice
@@ -324,16 +121,27 @@ function TruckRoutesControl() {
                         weekButton.classList.remove('active');
                     });
                 button.classList.add('active');
+                removeCurrentLayerFromMap(map)
             }
         });
         addElementToControl(button);
     }
 
+    /**
+     * Get the week that selected
+     * @returns {*}
+     */
     function getSelectedWeek() {
         let selected = document.querySelector('div#trucks_control div.chip.active');
         return selected ? selected.innerText : undefined;
     }
 
+    /**
+     * Add layers and control of specified week to the map.
+     * @param week
+     * @param day
+     * @param map
+     */
     function addNewLayerToMap(week, day, map) {
         currentTrucksMapLayer = weeklyTrucksGeoJSON[week][day];
         map.addLayer(currentTrucksMapLayer[0].route);
@@ -344,10 +152,17 @@ function TruckRoutesControl() {
             overlayControls[`${truckNumber} stops`] = truck.customers;
         });
         if (currentTrucksMapLayerControl) currentTrucksMapLayerControl.remove(map);
-        currentTrucksMapLayerControl = L.control.layers(null, overlayControls);
+        currentTrucksMapLayerControl = L.control.layers(null, overlayControls, {collapsed: false});
         currentTrucksMapLayerControl.addTo(map);
     }
 
+    /**
+     * Add interaction listener to button. Toggle button active on click.
+     * @param button
+     * @param day
+     * @param map
+     * @returns {*}
+     */
     function addListenerToDayButton(button, day, map) {
         button.addEventListener('click', e => {
             let week = getSelectedWeek();
@@ -369,6 +184,10 @@ function TruckRoutesControl() {
         return button;
     }
 
+    /**
+     * Create button for days the waste management operates regardless of the available in the data
+     * @param map
+     */
     function createButtonsForActiveDays(map) {
         let divider = document.createElement('div');
         divider.className = 'divider';
@@ -389,19 +208,25 @@ function TruckRoutesControl() {
         addElementToControl(container);
     }
 
-    function addElementToControl(button) {
+    /**
+     * Add element to density control
+     * @param element
+     */
+    function addElementToControl(element) {
         document.querySelector('div#trucks_control div.preloader').classList.add('hide');
-        document.querySelector('div#trucks_control').insertAdjacentElement('beforeend', button);
+        document.querySelector('div#trucks_control').insertAdjacentElement('beforeend', element);
     }
 
     this.load = map => {
         mapconsole.message('Getting Data on Truck Routes...');
-        getTrucksGeoJSON()
+        utils.getData('trucks_and_routes')
             .then(data => {
                 let allWeeks = [].slice.call(document.querySelectorAll('#helper.available_weeks pre')).map(weekDOM => {
-                    return weekDOM.innerText.replace( /(.csv)|(.xlsx)$/g, '');;
+                    return weekDOM.innerText
                 });
 
+                map.createPane('routes');
+                map.getPane('routes').style.zIndex = 600;
                 for (let week of allWeeks) {
                     createRoutesForWeek(week, data[week]);
                     createButtonForWeek(week, map);

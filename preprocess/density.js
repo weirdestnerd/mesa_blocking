@@ -8,14 +8,13 @@ const path = require('path');
 const dbf = require('dbf');
 const utils = require('../utils');
 const HashMap = require('hashmap');
+const jsonfile = require('jsonfile');
 
 /**
  * Global dependencies
  */
 let zoneGeoJSON;
 let latLngRoute = new HashMap();
-let isFirstToFinish = true;
-let weeks;
 
 /**
  * Finds the index of the zone that coordinate belongs to
@@ -71,6 +70,23 @@ function assignCustomerToZone() {
 }
 
 /**
+ * Read file names in 'data/weeks/' directory and assign customers to zone
+ * @returns {Promise<any>}
+ */
+function assignPickupsToZone() {
+    return new Promise((resolve, reject) => {
+        fs.readdir(path.join(__dirname, '../data/weeks/'), (error, filenames) => {
+            if (error) reject(error);
+            weeks = filenames;
+            let apply = filenames.map(filename => {
+                return assignWeekDataToZone(`weeks/${filename}`);
+            });
+            Promise.all(apply).then(() => resolve(filenames)).catch(reject);
+        })
+    })
+}
+
+/**
  * Read from file the weekly data and assign each customer for that week to their respective zone.
  * @param {string} filename filename name of file in ./data directory. if file is in sub-directory of ./data, precede the filename with sub-directory name. Include file extension in filename.
  * @returns {Promise<any>}
@@ -103,11 +119,12 @@ function assignWeekDataToZone(filename) {
 
 /**
  * Calculate density for each zone
+ * @param {[String]} filenames Names of files for week data
  */
-function calculateZoneDensity() {
+function calculateZoneDensity(filenames) {
     zoneGeoJSON.features.forEach(feature => {
         let customerCount = feature.properties.customerCount;
-        for (let weekName of weeks) {
+        for (let weekName of filenames) {
             let weekCount = feature.properties[weekName];
             let density;
             //  if there are customers and there are pick ups
@@ -153,6 +170,19 @@ function savePropertiesInDBF() {
 }
 
 /**
+ * Save global zoneGeoJSON to JSON file
+ */
+function saveZoneAsJSON() {
+    let filepath = path.join(__dirname, '../data/json');
+    if(!fs.existsSync(filepath)) {
+        fs.mkdirSync(filepath)
+    }
+    filepath = path.join(__dirname, '../data/json/ZonesGeoJSON.json');
+    jsonfile.writeFile(filepath, zoneGeoJSON)
+        .catch(console.error);
+}
+
+/**
  * Runs through data on all customers and recorded pick ups in each available week. Records the count of entries in geoJSON and then saves the geoJSON in file
  * @returns {Promise<any>}
  */
@@ -161,37 +191,14 @@ function preprocess() {
         dataProvider.getCityGeoJSON()
             .then(geoJSON => {
                 zoneGeoJSON = geoJSON;
-                //  if assigning all customer data finishes first then let assignWeekDataToZone() save to dbf
-                assignCustomerToZone()
-                    .then(() => {
-                        if (isFirstToFinish) {
-                            isFirstToFinish = false;
-                        } else {
-                            calculateZoneDensity();
+                assignCustomerToZone().then(() => {
+                    assignPickupsToZone()
+                        .then(filenames => {
+                            calculateZoneDensity(filenames);
                             savePropertiesInDBF();
-                        }
-                    });
-            })
-            .then(() => {
-                fs.readdir(path.join(__dirname, '../data/weeks/'), (error, filenames) => {
-                    if (error) reject(error);
-                    weeks = filenames;
-                    let apply = filenames.map(filename => {
-                        return assignWeekDataToZone(`weeks/${filename}`);
-                    });
-
-                    //  if assigning all week data finishes first then let assignCustomerToZone() save to dbf
-                    Promise.all(apply)
-                        .then(() => {
-                            if (isFirstToFinish) {
-                                isFirstToFinish = false;
-                            } else {
-                                calculateZoneDensity();
-                                savePropertiesInDBF();
-                            }
-                            resolve(zoneGeoJSON);
-                        })
-                        .catch(reject);
+                            saveZoneAsJSON();
+                            resolve()
+                        });
                 })
             })
             .catch(reject)
@@ -202,7 +209,9 @@ module.exports = {
     run: preprocess
 };
 
-let timer = new utils.Timer().startTimer();
-preprocess().then(() => {
-    console.log(`Done in ${timer.stopTimer()} seconds`);
-}).catch(console.error);
+if (process.mainModule.filename === __filename) {
+    let timer = new utils.Timer().startTimer();
+    preprocess().then(() => {
+        console.log(`Done in ${timer.stopTimer()} seconds`);
+    }).catch(console.error);
+}

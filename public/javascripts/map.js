@@ -28,7 +28,7 @@ function initMap(options) {
     map.setMaxBounds(bounds);
 
 // add mesa city zone layout
-    getCityLayout().then(layout => {
+    utils.getData('city').then(layout => {
         L.geoJSON(layout, {style: {fill: false}}).addTo(map);
     });
 

@@ -391,6 +391,22 @@ function readJSON(filename) {
     });
 }
 
+/**
+ * Find the intersection between all customers and the customers in the specified week name.
+ * @param {String} weekname Name of week to compare
+ */
+function countFiles(weekname) {
+    readCustomersFile(['latitude', 'longitude'])
+        .then(customers => {
+            readFile('weeks/'+weekname, ['latitude', 'longitude'])
+                .then(week => {
+                    let intersect = customers.filter(loc => week.findIndex(p => p.LATITUDE === loc.LATITUDE && p.LONGITUDE === loc.LONGITUDE) !== -1);
+                    console.log('intersects: ', intersect.length);
+                    console.log('allCustomers: ', customers.length, 'week: ', week.length)
+                })
+        })
+}
+
 module.exports = {
     getWeeklyDataFromFile: readFile,
     getWeeklyDataFromDatabase: readDatabase,

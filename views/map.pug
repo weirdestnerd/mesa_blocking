@@ -24,18 +24,17 @@ block content
                     h5 Truck Routes
                     div.preloader.progress.blue.ligthen-4
                         div.indeterminate.blue.darken-4
-                div#analysis_control
-                    h5 Analysis
-                    div.preloader.progress.blue.ligthen-4
-                        div.indeterminate.blue.darken-4
         div.col.s10
             div#map
 
     div#graphs.row
+        div#analysis_control
+            h5 Analysis
+            div.preloader.progress.blue.ligthen-4
+                div.indeterminate.blue.darken-4
 
 block scripts
     include dependency_scripts
-    script(src='/javascripts/clientSocketIO.js')
     script(src='/javascripts/densityMapInteraction.js')
     script(src='/javascripts/trucksMapInteraction.js')
     script(src='/javascripts/interaction.js')

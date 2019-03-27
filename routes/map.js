@@ -18,4 +18,25 @@ router.get('/', function(req, res, next) {
     });
 });
 
+router.param('datarequest', (req, res, next, requestedfile) => {
+    let filepath;
+    switch (requestedfile) {
+        case 'city': filepath = path.join(__dirname, '../data/json/CityZonesGeoJSON.json');
+            break;
+        case 'density': filepath = path.join(__dirname, '../data/json/ZonesGeoJSON.json');
+            break;
+        case 'trucks_and_routes': filepath = path.join(__dirname, '../data/json/TrucksAndRoutes.json');
+            break;
+        default:
+            res.sendStatus(404);
+    }
+    let data = fs.createReadStream(filepath);
+    data.pipe(res);
+    data.on('end', () => res.end)
+});
+
+router.get('/:datarequest', (req, res, next) => {
+    next();
+});
+
 module.exports = router;

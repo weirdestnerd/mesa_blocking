@@ -445,6 +445,10 @@ function Timer(startTime) {
         return this;
     };
 
+    this.getTime = () => {
+        return timer;
+    };
+
     this.stopTimer = () => {
         if (!timer) {
             console.error('Timer has not been started yet');
