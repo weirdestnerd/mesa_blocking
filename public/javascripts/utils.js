@@ -33,6 +33,7 @@ function Utils() {
             datarequest.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
             datarequest.responseType = 'json';
             datarequest.onload = e => {
+                //TODO: decompress zipped response
                 resolve(datarequest.response);
             };
             datarequest.onabort = e => {
@@ -41,7 +42,7 @@ function Utils() {
             datarequest.onerror = e => {
                 reject('Error: internal server error when getting data');
             };
-            datarequest.send(JSON.stringify({file: 'density'}));
+            datarequest.send();
         })
     }
 }

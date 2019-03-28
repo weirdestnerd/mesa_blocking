@@ -1,7 +1,7 @@
 function TruckRoutesControl() {
     let weeklyTrucksGeoJSON = {};
     let currentTrucksMapLayer;
-    let currentTrucksMapLayerControl;
+    let currentTrucksMapLayerControl = L.control.layers(null, null, {collapsed: false, position: 'topleft'});
 
     function createRoutesForWeek(week, weekData) {
         function generateColorPalette(colorGrades) {
@@ -51,7 +51,9 @@ function TruckRoutesControl() {
                 let customers = createLayerGroup(truck.stops[day]);
                 let z = addZValueToStops(truck.stops[day]);
                 let palette = generateColorPalette(z.colorGrades);
-                let hotline = L.hotline(z.stops, {pane: 'routes', palette: palette}).bindTooltip(truck.vehicle).bindPopup(truck.vehicle);
+                let renderer = L.Hotline.renderer({pane: 'routes'});
+                let hotline = new L.Hotline(z.stops, {palette: palette, renderer: renderer}).bindTooltip(truck.vehicle.toString()).bindPopup(truck.vehicle.toString());
+
                 return {customers: customers, route: hotline};
             });
         }
@@ -89,11 +91,14 @@ function TruckRoutesControl() {
      * @param map
      */
     function removeCurrentLayerFromMap(map) {
+        if (!currentTrucksMapLayer) return;
         currentTrucksMapLayer.forEach(truck => {
             map.removeLayer(truck.customers);
+            currentTrucksMapLayerControl.removeLayer(truck.customers);
             map.removeLayer(truck.route);
+            currentTrucksMapLayerControl.removeLayer(truck.route);
         });
-        currentTrucksMapLayerControl.remove()
+        currentTrucksMapLayerControl.remove(map);
     }
 
     /**
@@ -145,14 +150,11 @@ function TruckRoutesControl() {
     function addNewLayerToMap(week, day, map) {
         currentTrucksMapLayer = weeklyTrucksGeoJSON[week][day];
         map.addLayer(currentTrucksMapLayer[0].route);
-        let overlayControls = {};
         currentTrucksMapLayer.forEach(truck => {
             let truckNumber = truck.route.getTooltip()['_content'];
-            overlayControls[truckNumber] = truck.route;
-            overlayControls[`${truckNumber} stops`] = truck.customers;
+            currentTrucksMapLayerControl.addOverlay(truck.route, truckNumber);
+            currentTrucksMapLayerControl.addOverlay(truck.customers, `${truckNumber} stops`);
         });
-        if (currentTrucksMapLayerControl) currentTrucksMapLayerControl.remove(map);
-        currentTrucksMapLayerControl = L.control.layers(null, overlayControls, {collapsed: false});
         currentTrucksMapLayerControl.addTo(map);
     }
 
@@ -226,7 +228,7 @@ function TruckRoutesControl() {
                 });
 
                 map.createPane('routes');
-                map.getPane('routes').style.zIndex = 600;
+                map.getPane('routes').style.zIndex = 399;
                 for (let week of allWeeks) {
                     createRoutesForWeek(week, data[week]);
                     createButtonForWeek(week, map);

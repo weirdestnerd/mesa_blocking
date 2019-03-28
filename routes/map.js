@@ -1,6 +1,7 @@
-var express = require('express');
-var router = express.Router();
+const express = require('express');
+const router = express.Router();
 const fs = require('fs');
+const zlib = require('zlib');
 const path = require('path');
 const camelcase = require('../utils').Camelcase;
 
@@ -31,7 +32,12 @@ router.param('datarequest', (req, res, next, requestedfile) => {
             res.sendStatus(404);
     }
     let data = fs.createReadStream(filepath);
-    data.pipe(res);
+    //TODO: send file as zip if file is big
+    // let gzip = zlib.createGzip();
+    res.set('Content-Type', 'application/json');
+    data
+        // .pipe(gzip)
+        .pipe(res);
     data.on('end', () => res.end)
 });
 

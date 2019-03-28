@@ -4,6 +4,11 @@ block links
     integrity="sha512-puBpdR0798OZvTTbP4A8Ix/l+A4dHDD0DGqYW6RQ+9jxkRFclaxxQb/SJAWZfWAkuyeQUytO7+7N4QKrDh+drA=="
     crossorigin="")
     link(rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.100.2/css/materialize.min.css")
+    style.
+        input.leaflet-control-layers-selector[type="checkbox"]:not(:checked), input.leaflet-control-layers-selector[type="checkbox"]:checked {
+            opacity: 1;
+            position: relative;
+        }
 
 mixin week_tabs(weeks)
     each week in weeks

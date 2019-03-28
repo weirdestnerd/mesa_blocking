@@ -197,7 +197,7 @@ function DensityControl() {
         });
         weekGeoJSON.setStyle(function (feature) {
             let density = parseInt(feature.properties['%' + weekname]);
-            let style = {fill: true, fillOpacity: 0.8};
+            let style = {fill: true, fillOpacity: 0.45};
             if (density < 0) style.fillOpacity = 0;
             else style.fillColor = getColor(density);
             return style;
