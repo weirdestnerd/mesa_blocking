@@ -31,15 +31,18 @@ block content
                         div.indeterminate.blue.darken-4
         div.col.s10
             div#map
-
+    div.divider
     div#graphs.row
-        div#analysis_control
+        div#analysis_control.center
             h5 Analysis
-            div.preloader.progress.blue.ligthen-4
-                div.indeterminate.blue.darken-4
+            div.divider
+            div.analysis_section
+            div.analysis_start_control.col-3
+                button.btn.btn-flat.disabled.blue.ligthen-4 Start Analysis
 
 block scripts
     include dependency_scripts
     script(src='/javascripts/densityMapInteraction.js')
     script(src='/javascripts/trucksMapInteraction.js')
+    script(src='/javascripts/analysisInteraction.js')
     script(src='/javascripts/interaction.js')

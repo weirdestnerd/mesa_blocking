@@ -1,4 +1,5 @@
 function TruckRoutesControl() {
+    let trucks_and_routes_data;
     let weeklyTrucksGeoJSON = {};
     let currentTrucksMapLayer;
     let currentTrucksMapLayerControl = L.control.layers(null, null, {collapsed: false, position: 'topleft'});
@@ -219,9 +220,23 @@ function TruckRoutesControl() {
         document.querySelector('div#trucks_control').insertAdjacentElement('beforeend', element);
     }
 
+    function setData(data) {
+        trucks_and_routes_data = data
+    }
+
+    this.getData = () => {
+        return trucks_and_routes_data;
+    };
+
     this.load = map => {
         mapconsole.message('Getting Data on Truck Routes...');
         utils.getData('trucks_and_routes')
+            .then(data => {
+                setData(data);
+                document.dispatchEvent(dataOnTrucksReady);
+                console.log('got and set data');
+                return data
+            })
             .then(data => {
                 let allWeeks = [].slice.call(document.querySelectorAll('#helper.available_weeks pre')).map(weekDOM => {
                     return weekDOM.innerText
