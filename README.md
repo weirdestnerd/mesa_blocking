@@ -17,5 +17,8 @@ The program would first preprocess the files in 'data/' directory into 'data/jso
 
 The program can be started by running `npm start` in the Terminal(Mac) / Git Bash(Windows) at the directory where the program is.
 
+## Versioning
+[Semantic Versioning](https://semver.org/) scheme is employed. v1.2.3 implies major version #1, minor version #2, feature upgrade #3.
+
 --------
 For further documentation, see inline jsdoc in the .js files.
