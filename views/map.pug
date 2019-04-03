@@ -36,7 +36,22 @@ block content
         div#analysis_control.center
             h5 Analysis
             div.divider
-            div.analysis_section
+            div.analysis_section.hide
+                div.row
+                    h5.left Overall Truck Performance
+                div.overall_analysis.row
+                    div.col.m6.cans_graph
+                    div.col.m6.stops_graph
+                    div.col.m6.hours_graph
+                    div.col.m6.pie_chart
+
+                div.row
+                    h5.left Weekly Truck Performance
+                div.weekly_analysis.row
+                    div.col.m6.cans_graph
+                    div.col.m6.stops_graph
+                    div.col.m6.hours_graph
+
             div.analysis_start_control.col-3
                 button.btn.btn-flat.disabled.blue.ligthen-4 Start Analysis
 

@@ -63,14 +63,14 @@ div.chip.active {
     opacity: 0.7;
 }
 
-div#trucks_graphs .cans_graph{
+div.overall_analysis .cans_graph{
     fill: steelblue;
 }
 
-div#trucks_graphs .houses_graph {
+div.overall_analysis .stops_graph {
     fill: #fc8d59;
 }
-div#trucks_graphs .hours_graph {
+div.overall_analysis .hours_graph {
     fill: #f768a1;
 }
 

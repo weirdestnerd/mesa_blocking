@@ -234,7 +234,6 @@ function TruckRoutesControl() {
             .then(data => {
                 setData(data);
                 document.dispatchEvent(dataOnTrucksReady);
-                console.log('got and set data');
                 return data
             })
             .then(data => {
