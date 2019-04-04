@@ -45,21 +45,17 @@ function AnalysisControl() {
 
         let margin = {top: 20, right: 20, bottom: 50, left: 70},
             width = divWidth - margin.left - margin.right,
-            height = 200 - margin.top - margin.bottom,
+            height = 200,
             radius = Math.min(width, height) / 2;
 
-        // let data = [{"label":"one", "value":20},
-        //     {"label":"two", "value":50},
-        //     {"label":"three", "value":30}];
-
-        const color = d3.scaleOrdinal(utils.COLORS);
+        const color = d3.scaleOrdinal(d3.schemeCategory10);
 
         let svg = d3.select(`div.overall_analysis .pie_chart`).append("svg")
             .attr("width", width + margin.left + margin.right)
             .attr("height", height + margin.top + margin.bottom)
             .append("g")
             .attr("transform",
-                "translate(" + width / 2 + "," + height / 2 + ")");
+                "translate(" + ((width / 2) - margin.left - margin.right) + "," + ((height / 2) + margin.top + margin.bottom) + ")");
 
         const pie = d3.pie()
             .value(d => d.percentage)
@@ -69,20 +65,91 @@ function AnalysisControl() {
             .innerRadius(0)
             .outerRadius(radius);
 
-        const path = svg.selectAll("path")
-            .data(pie(data));
+        const tooltip = d3.select('div.overall_analysis .pie_chart')
+            .append('div')
+            .attr('class', 'tooltip');
+        tooltip.append('div').attr('class', 'label');
+        tooltip.append('div').attr('class', 'percentage');
 
-        // Update existing arcs
-        // path.transition().duration(200).attrTween("d", arcTween);
-
-        // Enter new arcs
-        path.enter().append("path")
+        let path = svg.selectAll("path")
+            .data(pie(data))
+            .enter().append("path")
             .attr("fill", (d, i) => color(i))
             .attr("d", arc)
             .attr("stroke", "white")
-            .attr("stroke-width", "6px")
-            .each(function(d) { this._current = d; })
-            .text(d => d.percentage);
+            .attr("stroke-width", "1px")
+            .each(d => this._current - d)
+            .text(d => d.data.label);
+
+        path.on('mouseover', function (d) {
+            tooltip.select('.label').html(d.data.label);
+            tooltip.select('.percentage').html(`${d.data.percentage}%`);
+            tooltip.style('display', 'block');
+        });
+        path.on('mouseout', () => {
+            tooltip.style('display', 'none');
+        });
+        path.on('mousemove', function(d) { // when mouse moves
+            tooltip.style('top', (d3.event.layerY + 10) + 'px') // always 10px below the cursor
+                .style('left', (d3.event.layerX + 10) + 'px'); // always 10px to the right of the mouse
+        });
+
+        let legendRectSize = height / data.length;
+        let legend = svg.selectAll('.legend')
+            .data(color.domain())
+            .enter()
+            .append('g')
+            .attr('class', 'legend')
+            .attr('transform', function(d, i) {
+                let height = legendRectSize + 6; // height of element is the height of the colored square plus the spacing
+                let offset =  height * color.domain().length / 2; // vertical offset of the entire legend = height of a single element & half the total number of elements
+                let horz = 18 * legendRectSize; // the legend is shifted to the left to make room for the text
+                let vert = i * height - offset; // the top of the element is hifted up or down from the center using the offset defiend earlier and the index of the current element 'i'
+                return 'translate(' + horz + ',' + vert + ')'; //return translation
+            });
+
+        legend.append('rect')
+            .attr('width', legendRectSize)
+            .attr('height', legendRectSize)
+            .style('fill', color)
+            .style('stroke', color)
+            .on('click', function(label) {
+                let rect = d3.select(this); // this refers to the colored squared just clicked
+                let enabled = true; // set enabled true to default
+                let totalEnabled = d3.sum(data.map(function(d) { // can't disable all options
+                    return (d.enabled) ? 1 : 0; // return 1 for each enabled entry. and summing it up
+                }));
+
+                if (rect.attr('class') === 'disabled') { // if class is disabled
+                    rect.attr('class', ''); // remove class disabled
+                } else { // else
+                    if (totalEnabled < 2) return; // if less than two labels are flagged, exit
+                    rect.attr('class', 'disabled'); // otherwise flag the square disabled
+                    enabled = false; // set enabled to false
+                }
+
+                pie.value(function(d) {
+                    if (d.label === label) d.enabled = enabled; // if entry label matches legend label
+                    return (d.enabled) ? d.count : 0; // update enabled property and return count or 0 based on the entry's status
+                });
+
+                path = path.data(pie(data)); // update pie with new data
+
+                path.transition() // transition of redrawn pie
+                    .duration(750) //
+                    .attrTween('d', function(d) { // 'd' specifies the d attribute that we'll be animating
+                        let interpolate = d3.interpolate(this._current, d); // this = current path element
+                        this._current = interpolate(0); // interpolate between current value and the new value of 'd'
+                        return function(t) {
+                            return arc(interpolate(t));
+                        };
+                    });
+            });
+
+        legend.append('text')
+            .attr('x', legendRectSize + 6)
+            .attr('y', legendRectSize - 6)
+            .text(function(d) { return data[d].label; });
     }
 
     function createBarGraph(data, divID, properties) {
@@ -212,7 +279,7 @@ function AnalysisControl() {
             let result = {label: truck.vehicle, percentage: 0};
             let stops = stopsCount.find(entry => entry.vehicle === truck.vehicle).stops;
             let seconds = secondsCount.find(entry => entry.vehicle === truck.vehicle).seconds;
-            result.percentage = ((truck.cans + stops + seconds) / overallTotal).toFixed(2) * 100;
+            result.percentage = (((truck.cans + stops + seconds) / overallTotal).toFixed(2)) * 100;
             return result;
         });
         createPieChart(truckTotal);
