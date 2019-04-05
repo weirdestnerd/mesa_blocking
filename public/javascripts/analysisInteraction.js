@@ -48,7 +48,7 @@ function AnalysisControl() {
             height = 200,
             radius = Math.min(width, height) / 2;
 
-        const color = d3.scaleOrdinal(d3.schemeCategory10);
+        const color = d3.scaleOrdinal(d3.schemeSet3);
 
         let svg = d3.select(`div.overall_analysis .pie_chart`).append("svg")
             .attr("width", width + margin.left + margin.right)
