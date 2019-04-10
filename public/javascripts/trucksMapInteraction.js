@@ -30,8 +30,7 @@ function TruckRoutesControl() {
                     colorGrades.push(parseFloat(colorGrade));
                 }
                 else colorGrade = (1 / (index)).toFixed(2);
-                stop.push(parseFloat(colorGrade));
-                return stop;
+                return stop.concat(parseFloat(colorGrade));
             });
             return {stops: updatedStops, colorGrades: colorGrades}
         }
