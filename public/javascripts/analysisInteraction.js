@@ -255,6 +255,96 @@ function AnalysisControl() {
         return result;
     }
 
+    function createLineChart(data, divID, properties) {
+        if (!properties.hasOwnProperty('x') || !properties.hasOwnProperty('y')) {
+            console.error('x or y identifiers not provided');
+            return;
+        }
+        let divWidth = document.querySelector('div#analysis_control').clientWidth / 2;
+
+        let margin = {top: 20, right: 20, bottom: 50, left: 70},
+            width = divWidth - margin.left - margin.right,
+            height = 200 - margin.top - margin.bottom;
+
+        let maxY = data.reduce((acc, entry) => {
+            return Math.max(acc, entry.customers);
+        }, -Infinity);
+
+        let origin = {};
+        origin[properties.x] = 0;
+        origin[properties.y] = 0;
+        data.unshift(origin);
+
+        let xScale = d3.scalePoint()
+            .domain(data.map(entry => entry.week))
+            .range([0, width]);
+
+        let yScale = d3.scaleLinear()
+            .domain([0, maxY])
+            .range([height, 0]);
+
+        let line = d3.line()
+            .x(d => xScale(d[properties.x]))
+            .y(d => yScale(d[properties.y]));
+
+        let svg = d3.select(`div${divID}`).append("svg")
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", height + margin.top + margin.bottom)
+            .append("g")
+            .attr("transform",
+                "translate(" + margin.left + "," + margin.top + ")");
+
+        svg.append('g')
+            .attr('class', 'x_axis')
+            .attr("transform", "translate(0," + height + ")")
+            .call(d3.axisBottom(xScale));
+
+        svg.append('g')
+            .attr("class", "y axis")
+            .call(d3.axisLeft(yScale));
+
+        svg.append('path')
+            .datum(data)
+            .attr("class", "line")
+            .attr("d", line);
+
+        let focus = svg.append('g')
+            .attr('class', 'focus')
+            .style('display', 'none');
+        focus.append("line")
+            .attr("class", "x-hover-line hover-line")
+            .attr("y1", 0)
+            .attr("y2", height);
+
+        focus.append("line")
+            .attr("class", "y-hover-line hover-line")
+            .attr("x1", width)
+            .attr("x2", width);
+
+        focus.append("circle")
+            .attr("r", 7.5);
+
+        focus.append("text")
+            .attr("x", 15)
+            .attr("dy", ".31em");
+
+        svg.selectAll('.dot')
+            .data(data)
+            .enter().append("circle")
+            .attr("class", "dot")
+            .attr("cx", d => xScale(d[properties.x]))
+            .attr("cy", d => yScale(d[properties.y]))
+            .attr("r", 5)
+            .on("mouseover", function() { focus.style("display", null); })
+            .on("mouseout", function() { focus.style("display", "none"); })
+            .on("mousemove", d => {
+                focus.attr("transform", "translate(" + xScale(d[properties.x]) + "," + yScale(d[properties.y]) + ")");
+                focus.select("text").text(function() { return d[properties.y]; });
+                focus.select(".x-hover-line").attr("y2", height - yScale(d[properties.y]));
+                focus.select(".y-hover-line").attr("x2", width + width);
+            })
+    }
+
     function createGraphs() {
         let cansCount = calculateTruckCount('cans');
         createBarGraph(cansCount, '.overall_analysis .cans_graph', {x: 'vehicle', y: 'cans'});
@@ -283,7 +373,42 @@ function AnalysisControl() {
             return result;
         });
         createPieChart(truckTotal);
-    //    create grouped bar graphs for weekly performance
+        let customersTotal = Object.keys(trucks_data).map(week => {
+            let totalCustomerCount = trucks_data[week].routes.reduce((acc, route) => {
+                return acc + Object.keys(route['stops']).reduce((acc2, day) => {
+                    return acc2 + route['stops'][day].length;
+                }, 0);
+            }, 0);
+            return {
+                week: week.replace(/(.csv)|(.xlsx)$/g, ''),
+                customers: totalCustomerCount
+            };
+        });
+        createLineChart(customersTotal, '.overall_analysis .line-chart', {x: 'week', y: 'customers'});
+    }
+
+    function calculateConsistencyCustomers() {
+        let all = Object.keys(trucks_data).map(week => {
+            return trucks_data[week].routes.reduce((result, truck) => {
+                Object.keys(truck.stops).forEach(day => {
+                    result = result.concat(truck.stops[day]);
+                });
+                return result;
+            }, []);
+        });
+        all.sort((first, second) => second.length - first.length);
+        let intersect = all.shift();
+        for (let index = 0; index++; index < all.length) {
+            intersect = intersect.filter(coord => all[index].find(check => check[0] === coord[0] && check[1] === coord[1]) !== undefined);
+        }
+        return {
+            customers: intersect,
+            count: intersect.length
+        }
+    }
+
+    function insertInformation() {
+        document.querySelector('div.overall_analysis div.customer_consistency div.card-panel h5.number').innerText = calculateConsistencyCustomers().count;
     }
 
     this.load = () => {
@@ -291,6 +416,7 @@ function AnalysisControl() {
             this.process(error => {
                 if (error) return mapconsole.error(error);
                 createGraphs();
+                insertInformation();
                 resolve();
             })
         })

@@ -60,13 +60,20 @@ block content
                         div.heading
                             h6.center Truck performance (combination of cans, stops & hours)
                         div.pie_chart
+                    div.col.m6
+                        div.divider
+                        div.heading
+                            h6.center Customer Consistency
+                        div.line-chart
+                    div.col.m6
+                        div.divider
+                        div.col.m6.offset-m3.customer_consistency
+                            div.card-panel.grey.ligthen-2.white.text
+                                h5.number
+                                h6.content(style="text-transform:uppercase") consistent customer in all weeks
                 div.divider
                 div.row
-                    h5.left Weekly Truck Performance
-                div.weekly_analysis.row
-                    div.col.m6.cans_graph
-                    div.col.m6.stops_graph
-                    div.col.m6.hours_graph
+                    h5.left Individual Truck Performance
 
             div.analysis_start_control.col-3
                 button.btn.btn-flat.disabled.blue.ligthen-4 Start Analysis

@@ -93,3 +93,32 @@ div.overall_analysis .tooltip {
     width: 80px;
     z-index: 10;
 }
+
+div.overall_analysis .line-chart .line {
+    fill: none;
+    stroke: #00B7FF;
+    stroke-width: 3;
+}
+
+div.overall_analysis .line-chart .dot {
+    fill: #00B7FF;
+    stroke: #ffffff;
+}
+
+div.overall_analysis .line-chart .overlay {
+    fill: none;
+    pointer-events: all;
+}
+
+div.overall_analysis .line-chart .focus circle {
+    fill: #ffffff;
+    stroke: #00B7FF;
+    stroke-width: 5px;
+    z-index: 1000;
+}
+
+div.overall_analysis .line-chart .hover-line {
+    stroke: #00B7FF;
+    stroke-width: 2px;
+    stroke-dasharray: 3,3;
+}
