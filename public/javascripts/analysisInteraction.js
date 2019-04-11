@@ -1,6 +1,7 @@
 function AnalysisControl() {
     let trucks_data;
     let analysis_data = [];
+    let trucksAnalysisMap = {};
 
     function getVehicle(vehicle) {
         return analysis_data.find(truck => truck.vehicle === vehicle);
@@ -50,7 +51,7 @@ function AnalysisControl() {
 
         const color = d3.scaleOrdinal(d3.schemeSet3);
 
-        let svg = d3.select(`div.overall_analysis .pie_chart`).append("svg")
+        let svg = d3.select(`div.overall_analysis .performance_pie_chart`).append("svg")
             .attr("width", width + margin.left + margin.right)
             .attr("height", height + margin.top + margin.bottom)
             .append("g")
@@ -65,7 +66,7 @@ function AnalysisControl() {
             .innerRadius(0)
             .outerRadius(radius);
 
-        const tooltip = d3.select('div.overall_analysis .pie_chart')
+        const tooltip = d3.select('div.overall_analysis .performance_pie_chart')
             .append('div')
             .attr('class', 'tooltip');
         tooltip.append('div').attr('class', 'label');
@@ -335,14 +336,37 @@ function AnalysisControl() {
             .attr("cx", d => xScale(d[properties.x]))
             .attr("cy", d => yScale(d[properties.y]))
             .attr("r", 5)
-            .on("mouseover", function() { focus.style("display", null); })
-            .on("mouseout", function() { focus.style("display", "none"); })
+            .on("mouseover", function () {
+                focus.style("display", null);
+            })
+            .on("mouseout", function () {
+                focus.style("display", "none");
+            })
             .on("mousemove", d => {
                 focus.attr("transform", "translate(" + xScale(d[properties.x]) + "," + yScale(d[properties.y]) + ")");
-                focus.select("text").text(function() { return d[properties.y]; });
+                focus.select("text").text(function () {
+                    return d[properties.y];
+                });
                 focus.select(".x-hover-line").attr("y2", height - yScale(d[properties.y]));
                 focus.select(".y-hover-line").attr("x2", width + width);
-            })
+            });
+
+        svg.append("text")
+            .attr("transform",
+                "translate(" + (width/2) + " ," +
+                (height + margin.top + 20) + ")")
+            .style("text-anchor", "middle")
+            .text(properties.x);
+
+        // text label for the y axis
+        svg.append("text")
+            .attr("transform", "rotate(-90)")
+            .attr("y", 0 - margin.left)
+            .attr("x",0 - (height / 2))
+            .attr("dy", "1em")
+            .style("text-anchor", "middle")
+            .text(properties.y);
+
     }
 
     function createGraphs() {
@@ -384,7 +408,7 @@ function AnalysisControl() {
                 customers: totalCustomerCount
             };
         });
-        createLineChart(customersTotal, '.overall_analysis .line-chart', {x: 'week', y: 'customers'});
+        createLineChart(customersTotal, '.overall_analysis .customer_consistency_line_chart', {x: 'week', y: 'customers'});
     }
 
     function calculateConsistencyCustomers() {
@@ -409,6 +433,39 @@ function AnalysisControl() {
 
     function insertInformation() {
         document.querySelector('div.overall_analysis div.customer_consistency div.card-panel h5.number').innerText = calculateConsistencyCustomers().count;
+        document.querySelector('div.analysis_section div.truck_count div.card-panel h5.number').innerText = analysis_data.length;
+        document.querySelector('div.analysis_section div.weeks_count div.card-panel h5.number').innerText = Object.keys(trucks_data).length;
+    }
+
+    function getTruckAnalysisInfo(truckNumber) {
+        return trucksAnalysisMap.hasOwnProperty(truckNumber) ? trucksAnalysisMap[truckNumber] : null;
+    }
+
+    function createTruckAnalysisInfo(truckNumber) {
+    //    TODO: calculate miles covered, time spent, customers served; create graph for cans, stops, hours, & customer consistency
+    }
+
+    function showTruckAnalysis(truckNumber) {
+        document.querySelector('div.analysis_section div.truck_analysis div.interface').classList.remove('hide');
+        document.querySelector('div.analysis_section div.truck_analysis h5.truck_number span').innerText = truckNumber;
+        let truckInfo = getTruckAnalysisInfo(truckNumber);
+        if (!truckInfo) truckInfo = createTruckAnalysisInfo(truckNumber);
+    //    TODO:
+    }
+
+    function activateTruckAnalysisSection() {
+        let truckSelection = document.querySelector('div.truck_analysis select');
+        analysis_data.forEach(truck => {
+            let DOMoption = document.createElement('option');
+            DOMoption.setAttribute('value', truck.vehicle);
+            DOMoption.innerText = truck.vehicle;
+            truckSelection.insertAdjacentElement('beforeend', DOMoption);
+        });
+        $(document).ready(() => $(truckSelection).material_select());
+        $(truckSelection).on('change', e => showTruckAnalysis(e.target.value));
+        document.querySelector('div.analysis_section div.truck_analysis div.preloader').classList.add('hide');
+        document.querySelector('div.analysis_section div.truck_analysis div.truck_selection').classList.remove('hide');
+        console.log(analysis_data);
     }
 
     this.load = () => {
@@ -417,6 +474,7 @@ function AnalysisControl() {
                 if (error) return mapconsole.error(error);
                 createGraphs();
                 insertInformation();
+                activateTruckAnalysisSection();
                 resolve();
             })
         })

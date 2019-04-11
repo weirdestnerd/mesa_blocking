@@ -23,11 +23,11 @@ block content
             div#control_panel
                 div#density_control
                     h5 Density
-                    div.preloader.progress.blue.ligthen-4
+                    div.preloader.progress.blue.lighten-4
                         div.indeterminate.blue.darken-4
                 div#trucks_control
                     h5 Truck Routes
-                    div.preloader.progress.blue.ligthen-4
+                    div.preloader.progress.blue.lighten-4
                         div.indeterminate.blue.darken-4
         div.col.s10
             div#map
@@ -38,7 +38,18 @@ block content
             div.divider
             div.analysis_section.hide
                 div.row
-                    h5.left Overall Truck Performance
+                    div.col.m6
+                        div.col.m6.offset-m3.truck_count
+                            div.card-panel.grey.lighten-5
+                                h5.number
+                                h6.content(style="text-transform:uppercase") total active trucks
+                    div.col.m6
+                        div.col.m6.offset-m3.weeks_count
+                            div.card-panel.grey.lighten-5
+                                h5.number
+                                h6.content(style="text-transform:uppercase") weeks analyzed
+                div.row
+                    h5.left Overall Truck Performances
                 div.overall_analysis.row
                     div.col.m6
                         div.divider
@@ -48,7 +59,7 @@ block content
                     div.col.m6
                         div.divider
                         div.heading
-                            h6.center Trucks by customers serviced
+                            h6.center Trucks by customers served
                         div.stops_graph
                     div.col.m6
                         div.divider
@@ -59,24 +70,56 @@ block content
                         div.divider
                         div.heading
                             h6.center Truck performance (combination of cans, stops & hours)
-                        div.pie_chart
+                        div.performance_pie_chart
                     div.col.m6
                         div.divider
                         div.heading
                             h6.center Customer Consistency
-                        div.line-chart
+                        div.customer_consistency_line_chart
                     div.col.m6
                         div.divider
                         div.col.m6.offset-m3.customer_consistency
-                            div.card-panel.grey.ligthen-2.white.text
+                            div.card-panel.grey.lighten-5
                                 h5.number
                                 h6.content(style="text-transform:uppercase") consistent customer in all weeks
                 div.divider
                 div.row
                     h5.left Individual Truck Performance
+                div.truck_analysis
+                    div.divider
+                    div.row
+                        div.preloader.progress.blue.lighten-4
+                            div.indeterminate.blue.darken-4
+                        div.truck_selection.input-field.col.s4.hide
+                            select
+                                option(value='' disabled selected) Select Truck
+                            label Truck selection
+                    div.divider
+                    div.interface.hide
+                        div.row
+                            h5.truck_number.center Truck
+                                span.blue-text
+                        div.row
+                            div.col.m4.truck_distance
+                                div.card-panel.grey.lighten-5
+                                    h5.number 
+                                    h6.content(style="text-transform:uppercase") miles covered
+                            div.col.m4.truck_time
+                                div.card-panel.grey.lighten-5
+                                    h5.number
+                                    h6.content(style="text-transform:uppercase") time spent
+                            div.col.m4.truck_stops
+                                div.card-panel.grey.lighten-5
+                                    h5.number
+                                    h6.content(style="text-transform:uppercase") customers served
+                        div.row
+                            div.col.cans_graph
+                            div.col.stops_graph
+                            div.col.hours_graph
+                            div.col.customer_consistency_line_chart
 
             div.analysis_start_control.col-3
-                button.btn.btn-flat.disabled.blue.ligthen-4 Start Analysis
+                button.btn.btn-flat.disabled.blue.lighten-4 Start Analysis
 
 block scripts
     include dependency_scripts
