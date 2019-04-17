@@ -98,28 +98,29 @@ block content
                     div.interface.hide
                         div.row
                             h5.truck_number.center Truck
-                                span.blue-text
+                                span.blue-text(style="text-decoration:underscore")
                         div.row
                             div.col.m4.truck_distance
                                 div.card-panel.grey.lighten-5
-                                    h5.number 
-                                    h6.content(style="text-transform:uppercase") miles covered
+                                    h5.value
+                                    h6.content(style="text-transform:uppercase") average miles covered
                             div.col.m4.truck_time
                                 div.card-panel.grey.lighten-5
-                                    h5.number
-                                    h6.content(style="text-transform:uppercase") time spent
+                                    h5.value
+                                    h6.content(style="text-transform:uppercase") average time spent
                             div.col.m4.truck_stops
                                 div.card-panel.grey.lighten-5
-                                    h5.number
-                                    h6.content(style="text-transform:uppercase") customers served
+                                    h5.value
+                                    h6.content(style="text-transform:uppercase") average customers served
                         div.row
-                            div.col.cans_graph
-                            div.col.stops_graph
-                            div.col.hours_graph
-                            div.col.customer_consistency_line_chart
+                            div.col.m6.cans_graph
+                            div.col.m6.stops_graph
+                            div.col.m6.hours_graph
+
+                        div.row.truck_routes
 
             div.analysis_start_control.col-3
-                button.btn.btn-flat.disabled.blue.lighten-4 Start Analysis
+                button.btn.btn-flat.disabled.blue Start Analysis
 
 block scripts
     include dependency_scripts

@@ -3,8 +3,17 @@ function AnalysisControl() {
     let analysis_data = [];
     let trucksAnalysisMap = {};
 
-    function getVehicle(vehicle) {
-        return analysis_data.find(truck => truck.vehicle === vehicle);
+    function getVehicleFromAnalysis(vehicle) {
+        return analysis_data.find(truck => truck.vehicle === parseInt(vehicle));
+    }
+
+    function getVehicleFromTrucksData(vehicle) {
+        let truck = {};
+        Object.keys(trucks_data).forEach(week => {
+            let truckInWeek = trucks_data[week].routes.find(truck => truck.vehicle === parseInt(vehicle));
+            if (truckInWeek) truck[week] = truckInWeek;
+        });
+        return truck;
     }
 
     this.process = callback => {
@@ -13,7 +22,7 @@ function AnalysisControl() {
         mapconsole.message('Processing data on trucks.');
         Object.keys(trucks_data).forEach(week => {
             trucks_data[week]['routes'].forEach(truck => {
-                let vehicle = getVehicle(truck.vehicle);
+                let vehicle = getVehicleFromAnalysis(truck.vehicle);
                 if (!vehicle) vehicle = {vehicle: truck.vehicle, cans: {}, seconds: {}, stops: {}, new: true};
                 vehicle.cans[week] = truck.cans;
                 vehicle.seconds[week] = truck.seconds;
@@ -174,8 +183,10 @@ function AnalysisControl() {
         // append the svg object to the body of the page
         // append a 'group' element to 'svg'
         // moves the 'group' element to the top left margin
-        let svg = d3.select(`div${divID}`).append("svg")
-            .attr("width", width + margin.left + margin.right)
+        let DOMelement = divID ? document.querySelector(`div${divID}`) : document.createElementNS("http://www.w3.org/2000/svg", "svg");
+        let svg = divID ? d3.select(DOMelement).append("svg") : d3.select(DOMelement);
+
+        svg = svg.attr("width", width + margin.left + margin.right)
             .attr("height", height + margin.top + margin.bottom)
             .append("g")
             .attr("transform",
@@ -228,6 +239,8 @@ function AnalysisControl() {
             .attr("dy", "1em")
             .style("text-anchor", "middle")
             .text(properties.y);
+
+        return divID ? null : DOMelement;
     }
 
     function calculateTruckCount(type) {
@@ -268,7 +281,7 @@ function AnalysisControl() {
             height = 200 - margin.top - margin.bottom;
 
         let maxY = data.reduce((acc, entry) => {
-            return Math.max(acc, entry.customers);
+            return Math.max(acc, entry[properties.y]);
         }, -Infinity);
 
         let origin = {};
@@ -277,7 +290,7 @@ function AnalysisControl() {
         data.unshift(origin);
 
         let xScale = d3.scalePoint()
-            .domain(data.map(entry => entry.week))
+            .domain(data.map(entry => entry[properties.x]))
             .range([0, width]);
 
         let yScale = d3.scaleLinear()
@@ -288,8 +301,10 @@ function AnalysisControl() {
             .x(d => xScale(d[properties.x]))
             .y(d => yScale(d[properties.y]));
 
-        let svg = d3.select(`div${divID}`).append("svg")
-            .attr("width", width + margin.left + margin.right)
+        let DOMelement = divID ? document.querySelector(`div${divID}`) : document.createElementNS("http://www.w3.org/2000/svg", "svg");
+        let svg = divID ? d3.select(DOMelement).append("svg") : d3.select(DOMelement);
+
+        svg = svg.attr("width", width + margin.left + margin.right)
             .attr("height", height + margin.top + margin.bottom)
             .append("g")
             .attr("transform",
@@ -367,6 +382,7 @@ function AnalysisControl() {
             .style("text-anchor", "middle")
             .text(properties.y);
 
+        return divID ? null : DOMelement;
     }
 
     function createGraphs() {
@@ -441,8 +457,101 @@ function AnalysisControl() {
         return trucksAnalysisMap.hasOwnProperty(truckNumber) ? trucksAnalysisMap[truckNumber] : null;
     }
 
+    function calculateDistance(week) {
+        let totalDistance = 0;
+        for (let index = 0; index < week.length - 1; index++) {
+            let firstPoint = week[index],
+                secondPoint = week[index + 1];
+            totalDistance += utils.calculateLATLNGDistance(firstPoint[0], firstPoint[1], secondPoint[0], secondPoint[1]);
+        }
+        return totalDistance;
+    }
+
     function createTruckAnalysisInfo(truckNumber) {
-    //    TODO: calculate miles covered, time spent, customers served; create graph for cans, stops, hours, & customer consistency
+        let analysis = {};
+        let truckData = getVehicleFromAnalysis(truckNumber);
+        let truck = getVehicleFromAnalysis(truckNumber);
+
+        analysis['truck_distance'] = (function () {
+            let vehicle = getVehicleFromTrucksData(truckNumber);
+            let allStops = Object.values(vehicle).reduce((acc, truck) => {
+                acc.push(Object.values(truck.stops).flat());
+                return acc;
+            }, []);
+            let distances = allStops.map(week => {
+                return calculateDistance(week);
+            });
+            let totalDistance = distances.reduce((acc, distance) => acc + distance, 0);
+            return `${Math.floor(totalDistance / Object.keys(trucks_data).length)} miles`;
+        }());
+
+        analysis['time_spent'] = (function () {
+            let totalSeconds = Object.values(truckData.seconds).reduce((acc, value) => acc + value, 0);
+            totalSeconds /= Object.keys(trucks_data).length;
+            return `${Math.floor(totalSeconds / 3600)} h ${Math.floor((totalSeconds % 3600) / 60)} m ${Math.floor((totalSeconds % 3600) % 60)} s`;
+        }());
+
+        analysis['truck_stops'] = (function () {
+            let totalStops = Object.values(truck.stops).reduce((acc, week) => {
+                let weekStops = Object.values(week).reduce((acc1, day) => acc1 + day);
+                return acc + weekStops
+            }, 0);
+            return Math.floor(totalStops / Object.keys(trucks_data).length);
+        }());
+
+        analysis['cans_graph'] = (function () {
+            let cansCount = Object.keys(truck.cans).map(week => {
+                let weekCount = {};
+                weekCount['week'] = week.replace(/(.csv)|(.xlsx)$/g, '');
+                weekCount['cans'] = truck.cans[week];
+                return weekCount;
+            });
+            return createBarGraph(cansCount, null, {x: 'week', y: 'cans'})
+        }());
+
+        analysis['stops_graph'] = (function () {
+            let stopsCount = Object.keys(truck.stops).map(week => {
+                let weekCount = {};
+                weekCount['week'] = week.replace(/(.csv)|(.xlsx)$/g, '');
+                weekCount['stops'] = Object.values(truck.stops[week]).reduce((acc, day) => {
+                    return acc + day;
+                }, 0);
+                return weekCount;
+            });
+            return createBarGraph(stopsCount, null, {x:'week', y: 'stops'})
+        }());
+
+        analysis['hours_graph'] = (function () {
+            let hoursCount = Object.keys(truck.seconds).map(week => {
+                let weekCount = {};
+                weekCount['week'] = week.replace(/(.csv)|(.xlsx)$/g, '');
+                weekCount['hours'] = Math.floor(truck.seconds[week] / 3600);
+                return weekCount;
+            });
+            return createBarGraph(hoursCount, null, {x: 'week', y: 'hours'})
+        }());
+
+        analysis['customer_consistency'] = (function () {
+            let stopsCount = Object.keys(truck.stops).map(week => {
+                let weekCount = {};
+                weekCount['week'] = week.replace(/(.csv)|(.xlsx)$/g, '');
+                weekCount['customers'] = Object.values(truck.stops[week]).reduce((acc, day) => {
+                    return acc + day;
+                }, 0);
+                return weekCount;
+            });
+            return createLineChart(stopsCount, null, {x:'week', y: 'customers'})
+        }());
+
+        trucksAnalysisMap[truckNumber] = analysis;
+        return getTruckAnalysisInfo(truckNumber);
+    }
+
+    function insertTruckRoutes(truckNumber) {
+    //    TODO: create map for each truck route
+        let truck = getVehicleFromTrucksData();
+    //    for each week, create dom that scrolls
+    //    then, create map for each route and append to that dom
     }
 
     function showTruckAnalysis(truckNumber) {
@@ -450,7 +559,26 @@ function AnalysisControl() {
         document.querySelector('div.analysis_section div.truck_analysis h5.truck_number span').innerText = truckNumber;
         let truckInfo = getTruckAnalysisInfo(truckNumber);
         if (!truckInfo) truckInfo = createTruckAnalysisInfo(truckNumber);
-    //    TODO:
+        let DOMinterface = document.querySelector('div.analysis_section div.truck_analysis div.interface');
+
+        DOMinterface.child = id => {
+            let child = DOMinterface.querySelector(id);
+            child.innerElement = element => {
+                child.innerHTML = '';
+                child.insertAdjacentElement('beforeend', element);
+            };
+            return child;
+        };
+
+        DOMinterface.child('div.truck_time h5.value').innerText = truckInfo.time_spent;
+        DOMinterface.child('div.truck_distance h5.value').innerText = truckInfo.truck_distance;
+        DOMinterface.child('div.truck_stops h5.value').innerText = truckInfo.truck_stops;
+        DOMinterface.child('div.cans_graph').innerElement(truckInfo.cans_graph);
+        DOMinterface.child('div.stops_graph').innerElement(truckInfo.stops_graph);
+        DOMinterface.child('div.hours_graph').innerElement(truckInfo.hours_graph);
+        DOMinterface.child('div.customer_consistency_line_chart').innerElement(truckInfo.customer_consistency);
+
+        insertTruckRoutes(truckNumber);
     }
 
     function activateTruckAnalysisSection() {
@@ -465,7 +593,6 @@ function AnalysisControl() {
         $(truckSelection).on('change', e => showTruckAnalysis(e.target.value));
         document.querySelector('div.analysis_section div.truck_analysis div.preloader').classList.add('hide');
         document.querySelector('div.analysis_section div.truck_analysis div.truck_selection').classList.remove('hide');
-        console.log(analysis_data);
     }
 
     this.load = () => {
