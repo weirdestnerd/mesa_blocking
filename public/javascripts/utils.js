@@ -46,6 +46,27 @@ function Utils() {
             };
             datarequest.send();
         })
+    };
+
+    //source: https://www.geodatasource.com/developers/javascript
+    this.calculateLATLNGDistance = (lat1, long1, lat2, long2) => {
+        if ((lat1 === lat2) && (long1 === long2)) {
+            return 0;
+        }
+        else {
+            let radianLat1 = Math.PI * lat1/180;
+            let radianLat2 = Math.PI * lat2/180;
+            let theta = long1-long2;
+            let radianTheta = Math.PI * theta/180;
+            let dist = Math.sin(radianLat1) * Math.sin(radianLat2) + Math.cos(radianLat1) * Math.cos(radianLat2) * Math.cos(radianTheta);
+            if (dist > 1) {
+                dist = 1;
+            }
+            dist = Math.acos(dist);
+            dist = dist * 180/Math.PI;
+            dist = dist * 60 * 1.1515;
+            return dist;
+        }
     }
 }
 
