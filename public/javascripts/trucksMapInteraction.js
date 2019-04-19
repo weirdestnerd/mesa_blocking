@@ -191,17 +191,15 @@ function TruckRoutesControl() {
      * @param map
      */
     function createButtonsForActiveDays(map) {
-        let divider = document.createElement('div');
-        divider.className = 'divider';
-        addElementToControl(divider);
-
         let days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
         let container = document.createElement('div');
         container.className = 'days_control';
+        container.setAttribute('style', 'overflow-x: scroll');
         days.forEach(day => {
             let div = document.createElement('div');
             div.className = 'chip';
+            div.setAttribute('style', 'display: inline; padding: 7px 12px');
             div.innerText = day;
             div = addListenerToDayButton(div, day, map);
             container.insertAdjacentElement('beforeend', div);

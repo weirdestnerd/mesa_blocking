@@ -1,4 +1,5 @@
 function DensityControl() {
+    let densityData;
     let weeklyDensityGeoJSON = {};
     let currentDensityMapLayer;
     let densityColorGrades = {
@@ -254,6 +255,14 @@ function DensityControl() {
         addElementToControl(div);
     }
 
+    function setData(data) {
+        densityData = data;
+    }
+
+    this.getData = () => {
+        return densityData;
+    };
+
     this.load = map => {
         mapconsole.message('Getting Data on Zone Density ...');
         let allWeeks = [].slice.call(document.querySelectorAll('#helper.available_weeks pre')).map(weekDOM => {
@@ -261,6 +270,11 @@ function DensityControl() {
         });
 
         utils.getData('density')
+            .then(data => {
+                setData(data);
+                document.dispatchEvent(dataOnDensityReady);
+                return data
+            })
             .then(data => {
                 map.createPane('density');
                 map.getPane('density').style.zIndex = 400;

@@ -94,30 +94,30 @@ div.overall_analysis .tooltip {
     z-index: 10;
 }
 
-div.overall_analysis .customer_consistency_line_chart .line, div.truck_analysis div.interface div.customer_consistency_line_chart .line  {
+div.analysis_section .customer_consistency_line_chart .line, div.truck_analysis div.interface div.customer_consistency_line_chart .line, div.zone_performance div.interface div.pickups_line_chart .line  {
     fill: none;
     stroke: #00B7FF;
     stroke-width: 3;
 }
 
-div.overall_analysis .customer_consistency_line_chart .dot, div.truck_analysis div.interface div.customer_consistency_line_chart .dot {
+div.analysis_section .customer_consistency_line_chart .dot, div.truck_analysis div.interface div.customer_consistency_line_chart .dot, div.zone_performance div.interface div.pickups_line_chart .dot {
     fill: #00B7FF;
     stroke: #ffffff;
 }
 
-div.overall_analysis .customer_consistency_line_chart .overlay, div.truck_analysis div.interface div.customer_consistency_line_chart .overlay {
+div.analysis_section .customer_consistency_line_chart .overlay, div.truck_analysis div.interface div.customer_consistency_line_chart .overlay, div.zone_performance div.interface div.pickups_line_chart .overlay {
     fill: none;
     pointer-events: all;
 }
 
-div.overall_analysis .customer_consistency_line_chart .focus circle, div.truck_analysis div.interface div.customer_consistency_line_chart .focus circle {
+div.analysis_section .customer_consistency_line_chart .focus circle, div.truck_analysis div.interface div.customer_consistency_line_chart .focus circle, div.zone_performance div.interface div.pickups_line_chart .focus circle {
     fill: #ffffff;
     stroke: #00B7FF;
     stroke-width: 5px;
     z-index: 1000;
 }
 
-div.overall_analysis .customer_consistency_line_chart .hover-line, div.truck_analysis div.interface div.customer_consistency_line_chart .hover-line {
+div.analysis_section .customer_consistency_line_chart .hover-line, div.truck_analysis div.interface div.customer_consistency_line_chart .hover-line, div.zone_performance div.interface div.pickups_line_chart .hover-line {
     stroke: #00B7FF;
     stroke-width: 2px;
     stroke-dasharray: 3,3;

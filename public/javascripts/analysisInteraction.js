@@ -1,10 +1,13 @@
 function AnalysisControl() {
     let trucks_data;
-    let analysis_data = [];
+    let density_data;
+    let truck_analysis_data = [];
+    let density_analysis_data = [];
     let trucksAnalysisMap = {};
+    let densityAnalysisMap = {};
 
     function getVehicleFromAnalysis(vehicle) {
-        return analysis_data.find(truck => truck.vehicle === parseInt(vehicle));
+        return truck_analysis_data.find(truck => truck.vehicle === parseInt(vehicle));
     }
 
     function getVehicleFromTrucksData(vehicle) {
@@ -32,21 +35,60 @@ function AnalysisControl() {
                 });
                 if (vehicle.new) {
                     delete vehicle.new;
-                    analysis_data.push(vehicle);
+                    truck_analysis_data.push(vehicle);
                 }
             })
+        });
+        mapconsole.message('Processing data on zones.');
+        density_data.features.forEach(feature => {
+            let zone = density_analysis_data.find(zone => {
+                return zone.name === feature.properties.Map_Name && zone.day === feature.properties.GREEN_SVC;
+            });
+            if (!zone) {
+                zone = {
+                    name: feature.properties.Map_Name,
+                    day: feature.properties.GREEN_SVC,
+                    customers: feature.properties.customerCount,
+                    pickups: {}
+                };
+                Object.keys(feature.properties).forEach(property => {
+                    if (/^[^%][A-Za-z0-9_]+((.csv)|(.xlsx))$/g.test(property)) {
+                        zone.pickups[property.replace(/(.csv)|(.xlsx)$/g, '')] = feature.properties[property];
+                    }
+                });
+                density_analysis_data.push(zone);
+            } else {
+                zone.customers += feature.properties.customerCount ? feature.properties.customerCount : 0;
+                Object.keys(feature.properties).forEach(property => {
+                    if (/^[^%][A-Za-z0-9_]+((.csv)|(.xlsx))$/g.test(property)) {
+                        zone.pickups[property.replace(/(.csv)|(.xlsx)$/g, '')] += feature.properties[property];
+                    }
+                });
+            }
         });
         mapconsole.message('Done processing data.');
         callback(null);
     };
 
-    this.setData = data => {
+    this.setTruckData = data => {
         trucks_data = data;
+    };
+
+    this.setDensityData = data => {
+        density_data = data;
     };
 
     this.listenForData = () => {
         return new Promise(resolve => {
-            document.addEventListener('trucks data ready', resolve);
+            let waitOnSecondEvent = true;
+            document.addEventListener('trucks data ready', () => {
+                if (!waitOnSecondEvent) return resolve();
+                waitOnSecondEvent = false;
+            });
+            document.addEventListener('density data ready', () => {
+                if (!waitOnSecondEvent) return resolve();
+                waitOnSecondEvent = false;
+            });
         })
     };
 
@@ -248,21 +290,21 @@ function AnalysisControl() {
             return console.error('Invalid type');
         }
         let result = [];
-        for (let truck in analysis_data) {
+        for (let truck in truck_analysis_data) {
             let totals;
             if (type === 'stops') {
-                totals = Object.keys(analysis_data[truck][type]).reduce((acc, week) => {
-                    let entry = analysis_data[truck][type];
+                totals = Object.keys(truck_analysis_data[truck][type]).reduce((acc, week) => {
+                    let entry = truck_analysis_data[truck][type];
                     return acc + Object.keys(entry[week]).reduce((acc2, day) => {
                         return acc2 + entry[week][day]
                     }, 0);
                 }, 0);
             } else {
-                totals = Object.keys(analysis_data[truck][type]).reduce((acc, week) => {
-                    return acc + analysis_data[truck][type][week];
+                totals = Object.keys(truck_analysis_data[truck][type]).reduce((acc, week) => {
+                    return acc + truck_analysis_data[truck][type][week];
                 }, 0);
             }
-            let vehicle = {'vehicle': analysis_data[truck].vehicle};
+            let vehicle = {'vehicle': truck_analysis_data[truck].vehicle};
             vehicle[type] = totals;
             result.push(vehicle);
         }
@@ -424,7 +466,7 @@ function AnalysisControl() {
                 customers: totalCustomerCount
             };
         });
-        createLineChart(customersTotal, '.overall_analysis .customer_consistency_line_chart', {x: 'week', y: 'customers'});
+        createLineChart(customersTotal, '.analysis_section .customer_consistency_line_chart', {x: 'week', y: 'customers'});
     }
 
     function calculateConsistencyCustomers() {
@@ -448,8 +490,8 @@ function AnalysisControl() {
     }
 
     function insertInformation() {
-        document.querySelector('div.overall_analysis div.customer_consistency div.card-panel h5.number').innerText = calculateConsistencyCustomers().count;
-        document.querySelector('div.analysis_section div.truck_count div.card-panel h5.number').innerText = analysis_data.length;
+        document.querySelector('div.analysis_section div.customer_consistency div.card-panel h5.number').innerText = calculateConsistencyCustomers().count;
+        document.querySelector('div.analysis_section div.truck_count div.card-panel h5.number').innerText = truck_analysis_data.length;
         document.querySelector('div.analysis_section div.weeks_count div.card-panel h5.number').innerText = Object.keys(trucks_data).length;
     }
 
@@ -469,7 +511,6 @@ function AnalysisControl() {
 
     function createTruckAnalysisInfo(truckNumber) {
         let analysis = {};
-        let truckData = getVehicleFromAnalysis(truckNumber);
         let truck = getVehicleFromAnalysis(truckNumber);
 
         analysis['truck_distance'] = (function () {
@@ -486,7 +527,7 @@ function AnalysisControl() {
         }());
 
         analysis['time_spent'] = (function () {
-            let totalSeconds = Object.values(truckData.seconds).reduce((acc, value) => acc + value, 0);
+            let totalSeconds = Object.values(truck.seconds).reduce((acc, value) => acc + value, 0);
             totalSeconds /= Object.keys(trucks_data).length;
             return `${Math.floor(totalSeconds / 3600)} h ${Math.floor((totalSeconds % 3600) / 60)} m ${Math.floor((totalSeconds % 3600) % 60)} s`;
         }());
@@ -531,27 +572,8 @@ function AnalysisControl() {
             return createBarGraph(hoursCount, null, {x: 'week', y: 'hours'})
         }());
 
-        analysis['customer_consistency'] = (function () {
-            let stopsCount = Object.keys(truck.stops).map(week => {
-                let weekCount = {};
-                weekCount['week'] = week.replace(/(.csv)|(.xlsx)$/g, '');
-                weekCount['customers'] = Object.values(truck.stops[week]).reduce((acc, day) => {
-                    return acc + day;
-                }, 0);
-                return weekCount;
-            });
-            return createLineChart(stopsCount, null, {x:'week', y: 'customers'})
-        }());
-
         trucksAnalysisMap[truckNumber] = analysis;
         return getTruckAnalysisInfo(truckNumber);
-    }
-
-    function insertTruckRoutes(truckNumber) {
-    //    TODO: create map for each truck route
-        let truck = getVehicleFromTrucksData();
-    //    for each week, create dom that scrolls
-    //    then, create map for each route and append to that dom
     }
 
     function showTruckAnalysis(truckNumber) {
@@ -576,14 +598,11 @@ function AnalysisControl() {
         DOMinterface.child('div.cans_graph').innerElement(truckInfo.cans_graph);
         DOMinterface.child('div.stops_graph').innerElement(truckInfo.stops_graph);
         DOMinterface.child('div.hours_graph').innerElement(truckInfo.hours_graph);
-        DOMinterface.child('div.customer_consistency_line_chart').innerElement(truckInfo.customer_consistency);
-
-        insertTruckRoutes(truckNumber);
     }
 
     function activateTruckAnalysisSection() {
         let truckSelection = document.querySelector('div.truck_analysis select');
-        analysis_data.forEach(truck => {
+        truck_analysis_data.forEach(truck => {
             let DOMoption = document.createElement('option');
             DOMoption.setAttribute('value', truck.vehicle);
             DOMoption.innerText = truck.vehicle;
@@ -595,6 +614,69 @@ function AnalysisControl() {
         document.querySelector('div.analysis_section div.truck_analysis div.truck_selection').classList.remove('hide');
     }
 
+    function getZoneAnalysisInfo(zoneName) {
+        return densityAnalysisMap.hasOwnProperty(zoneName) ? densityAnalysisMap[zoneName] : null;
+    }
+
+    function getZoneFromDensityAnalysis(zoneName) {
+        return density_analysis_data.find(zone => zone.name === zoneName);
+    }
+
+    function createZoneAnalysisInfo(zoneName) {
+        let analysis = {};
+        let zone = getZoneFromDensityAnalysis(zoneName);
+
+        analysis['customers'] = zone.customers;
+
+        analysis['pickups_line_chart'] = (function () {
+            let pickupsCount = Object.keys(zone.pickups).map(week => {
+                return {
+                    week: week,
+                    pickups: zone.pickups[week]
+                };
+            });
+            return createLineChart(pickupsCount, null, {x: 'week', y:'pickups'})
+        }());
+
+        densityAnalysisMap[zoneName] = analysis;
+        return getZoneAnalysisInfo(zoneName);
+    }
+
+    function showZonePickUps(zoneValue) {
+        document.querySelector('div.analysis_section div.zone_performance div.interface').classList.remove('hide');
+        document.querySelector('div.analysis_section div.zone_performance h5.zone_name span').innerText = zoneValue;
+        let zoneName = zoneValue.replace(/\s+\(\w+\)$/g, '').trim();
+        let zone = getZoneAnalysisInfo(zoneName);
+        if (!zone) zone = createZoneAnalysisInfo(zoneName);
+        let DOMinterface = document.querySelector('div.analysis_section div.zone_performance div.interface');
+
+        DOMinterface.child = id => {
+            let child = DOMinterface.querySelector(id);
+            child.innerElement = element => {
+                child.innerHTML = '';
+                child.insertAdjacentElement('beforeend', element);
+            };
+            return child;
+        };
+
+        DOMinterface.child('div.customers h5.value').innerText = zone.customers;
+        DOMinterface.child('div.pickups_line_chart').innerElement(zone.pickups_line_chart);
+    }
+
+    function activateZonePickUpsSection() {
+        let zoneSelection = document.querySelector('div.zone_performance div.zone_selection select');
+        density_analysis_data.forEach(zone => {
+            let DOMoption = document.createElement('option');
+            DOMoption.setAttribute('value', `${zone.name} (${zone.day})`);
+            DOMoption.innerText = `${zone.name} (${zone.day})`;
+            zoneSelection.insertAdjacentElement('beforeend', DOMoption);
+        });
+        $(document).ready(() => $(zoneSelection).material_select());
+        $(zoneSelection).on('change', e => showZonePickUps(e.target.value));
+        document.querySelector('div.analysis_section div.zone_performance div.preloader').classList.add('hide');
+        document.querySelector('div.analysis_section div.zone_performance div.zone_selection').classList.remove('hide');
+    }
+
     this.load = () => {
         return new Promise(resolve => {
             this.process(error => {
@@ -602,6 +684,7 @@ function AnalysisControl() {
                 createGraphs();
                 insertInformation();
                 activateTruckAnalysisSection();
+                activateZonePickUpsSection();
                 resolve();
             })
         })

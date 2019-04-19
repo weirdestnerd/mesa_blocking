@@ -1,15 +1,19 @@
 let map = initMap({divID: 'map'});
-new DensityControl().load(map);
+// new DensityControl().load(map);
+let dataOnDensityReady = new Event('density data ready');
 let dataOnTrucksReady = new Event('trucks data ready');
 let analysisControl = new AnalysisControl();
+let densityControl = new DensityControl();
 let truckRoutesControl = new TruckRoutesControl();
 
 analysisControl.listenForData().then(() => {
     //WARN: Next line should be the only place to get data. Calling TruckRoutesControl.getData() anywhere else does not guarantee that the data will be available
-    analysisControl.setData(truckRoutesControl.getData());
+    analysisControl.setTruckData(truckRoutesControl.getData());
+    analysisControl.setDensityData(densityControl.getData());
     activateStartButton();
 });
 
+densityControl.load(map);
 truckRoutesControl.load(map);
 
 function showOverallGraphs() {
