@@ -1,4 +1,5 @@
 function TruckRoutesControl() {
+    let trucks_and_routes_data;
     let weeklyTrucksGeoJSON = {};
     let currentTrucksMapLayer;
     let currentTrucksMapLayerControl = L.control.layers(null, null, {collapsed: false, position: 'topleft'});
@@ -29,8 +30,7 @@ function TruckRoutesControl() {
                     colorGrades.push(parseFloat(colorGrade));
                 }
                 else colorGrade = (1 / (index)).toFixed(2);
-                stop.push(parseFloat(colorGrade));
-                return stop;
+                return stop.concat(parseFloat(colorGrade));
             });
             return {stops: updatedStops, colorGrades: colorGrades}
         }
@@ -191,17 +191,15 @@ function TruckRoutesControl() {
      * @param map
      */
     function createButtonsForActiveDays(map) {
-        let divider = document.createElement('div');
-        divider.className = 'divider';
-        addElementToControl(divider);
-
         let days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
         let container = document.createElement('div');
         container.className = 'days_control';
+        container.setAttribute('style', 'overflow-x: scroll');
         days.forEach(day => {
             let div = document.createElement('div');
             div.className = 'chip';
+            div.setAttribute('style', 'display: inline; padding: 7px 12px');
             div.innerText = day;
             div = addListenerToDayButton(div, day, map);
             container.insertAdjacentElement('beforeend', div);
@@ -219,9 +217,22 @@ function TruckRoutesControl() {
         document.querySelector('div#trucks_control').insertAdjacentElement('beforeend', element);
     }
 
+    function setData(data) {
+        trucks_and_routes_data = data
+    }
+
+    this.getData = () => {
+        return trucks_and_routes_data;
+    };
+
     this.load = map => {
         mapconsole.message('Getting Data on Truck Routes...');
         utils.getData('trucks_and_routes')
+            .then(data => {
+                setData(data);
+                document.dispatchEvent(dataOnTrucksReady);
+                return data
+            })
             .then(data => {
                 let allWeeks = [].slice.call(document.querySelectorAll('#helper.available_weeks pre')).map(weekDOM => {
                     return weekDOM.innerText

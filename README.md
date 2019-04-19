@@ -4,7 +4,7 @@ A map and graph interface that provides insight into activities of weekly waste 
 
 ## Before running
 
-There are multiple files in 'data/' directory needed before running the program.
+Make sure there's a 'data' directory available. In 'data/', there should be the following files: 
 * weeks/: This directory holds files of weekly collection. Names of these files would be used on the interface to refer to the files. For example: week1.csv will appear as week1 on the interface. **Only csv(.csv) and excel (.xlsx) files will be process. Excel files with multiple workbooks will not be process (in this case, separate each workbook into an excel and name them accordingly)**
 * allcustomers.csv: This file holds data on all customers in all zones.
 * MesaCityZones.dbf: This .dbf file is the database file for SHAPE files. It holds data on all zones. It will be processed along with MesaCityZones.shp.

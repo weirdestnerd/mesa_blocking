@@ -23,23 +23,131 @@ block content
             div#control_panel
                 div#density_control
                     h5 Density
-                    div.preloader.progress.blue.ligthen-4
+                    div.preloader.progress.blue.lighten-4
                         div.indeterminate.blue.darken-4
+                div.divider
                 div#trucks_control
                     h5 Truck Routes
-                    div.preloader.progress.blue.ligthen-4
+                    div.preloader.progress.blue.lighten-4
                         div.indeterminate.blue.darken-4
         div.col.s10
             div#map
-
+    div.divider
     div#graphs.row
-        div#analysis_control
+        div#analysis_control.center
             h5 Analysis
-            div.preloader.progress.blue.ligthen-4
-                div.indeterminate.blue.darken-4
+            div.divider
+            div.analysis_section.hide
+                div.row
+                    div.col.m4
+                        div.col.m12.truck_count
+                            div.card-panel.grey.lighten-5
+                                h5.number
+                                h6.content(style="text-transform:uppercase") total active trucks
+                    div.col.m4
+                        div.col.m12.weeks_count
+                            div.card-panel.grey.lighten-5
+                                h5.number
+                                h6.content(style="text-transform:uppercase") weeks analyzed
+                    div.col.m4
+                        div.col.m12.customer_consistency
+                            div.card-panel.grey.lighten-5
+                                h5.number
+                                h6.content(style="text-transform:uppercase") consistent customer in all weeks
+                div.row
+                    div.divider
+                    div.col.m6.offset-m3
+                        div.heading
+                            h6.center Customer Consistency
+                        div.customer_consistency_line_chart
+                div.row
+                    h5.left Overall Truck Performances
+                div.overall_analysis.row
+                    div.col.m6
+                        div.divider
+                        div.heading
+                            h6.center Trucks by cans picked up
+                        div.cans_graph
+                    div.col.m6
+                        div.divider
+                        div.heading
+                            h6.center Trucks by customers served
+                        div.stops_graph
+                    div.col.m6
+                        div.divider
+                        div.heading Trucks by hours worked
+                            h6.center
+                        div.hours_graph
+                    div.col.m6
+                        div.divider
+                        div.heading
+                            h6.center Truck performance (combination of cans, stops & hours)
+                        div.performance_pie_chart
+
+                div.divider
+                div.row
+                    h5.left Individual Truck Performance
+                div.truck_analysis
+                    div.divider
+                    div.row
+                        div.preloader.progress.blue.lighten-4
+                            div.indeterminate.blue.darken-4
+                        div.truck_selection.input-field.col.s4.hide
+                            select
+                                option(value='' disabled selected) Select Truck
+                            label Truck selection
+                    div.divider
+                    div.interface.hide
+                        div.row
+                            h5.truck_number.center Truck
+                                span.blue-text(style="text-decoration:underscore")
+                        div.row
+                            div.col.m4.truck_distance
+                                div.card-panel.grey.lighten-5
+                                    h5.value
+                                    h6.content(style="text-transform:uppercase") average miles covered
+                            div.col.m4.truck_time
+                                div.card-panel.grey.lighten-5
+                                    h5.value
+                                    h6.content(style="text-transform:uppercase") average time spent
+                            div.col.m4.truck_stops
+                                div.card-panel.grey.lighten-5
+                                    h5.value
+                                    h6.content(style="text-transform:uppercase") average customers served
+                        div.row
+                            div.col.m6.cans_graph
+                            div.col.m6.stops_graph
+                            div.col.m6.hours_graph
+                div.row
+                    h5.left Zone Pick Ups
+                div.zone_performance
+                   div.divider
+                   div.row
+                       div.preloader.progress.blue.lighten-4
+                           div.indeterminate.blue.darken-4
+                       div.zone_selection.input-field.col.s4.hide
+                           select
+                               option(value='' disabled selected) Select Zone
+                           label Zone Selection
+                   div.divider
+                   div.interface.hide
+                       div.row
+                           h5.zone_name.center Zone
+                               span.blue-text(style="text-decoration:underscore")
+                       div.row
+                           div.col.m6.pickups_line_chart
+                           div.col.m6.customers
+                               div.col.m6.offset-m3
+                                   div.card-panel.grey.lighten-5
+                                       h5.value
+                                       h6.content(style="text-transform:uppercase") Total customers in zone
+
+            div.analysis_start_control.col-3
+                button.btn.btn-flat.disabled.blue Start Analysis
 
 block scripts
     include dependency_scripts
     script(src='/javascripts/densityMapInteraction.js')
     script(src='/javascripts/trucksMapInteraction.js')
+    script(src='/javascripts/analysisInteraction.js')
     script(src='/javascripts/interaction.js')

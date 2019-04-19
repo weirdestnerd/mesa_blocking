@@ -63,18 +63,62 @@ div.chip.active {
     opacity: 0.7;
 }
 
-div#trucks_graphs .cans_graph{
+div.overall_analysis .cans_graph, div.analysis_section div.truck_analysis div.interface div.cans_graph {
     fill: steelblue;
 }
 
-div#trucks_graphs .houses_graph {
+div.overall_analysis .stops_graph, div.analysis_section div.truck_analysis div.interface div.stops_graph {
     fill: #fc8d59;
 }
-div#trucks_graphs .hours_graph {
+div.overall_analysis .hours_graph, div.analysis_section div.truck_analysis div.interface div.hours_graph {
     fill: #f768a1;
 }
 
 div.horizontal_line {
     border-bottom: 1px solid black;
     margin: 2em 0;
+}
+
+div.overall_analysis .tooltip {
+    background: #eee;
+    box-shadow: 0 0 5px #999999;
+    color: #333;
+    display: none;
+    font-size: 18px;
+    left: 130px;
+    padding: 10px;
+    position: absolute;
+    text-align: center;
+    top: 95px;
+    width: 80px;
+    z-index: 10;
+}
+
+div.analysis_section .customer_consistency_line_chart .line, div.truck_analysis div.interface div.customer_consistency_line_chart .line, div.zone_performance div.interface div.pickups_line_chart .line  {
+    fill: none;
+    stroke: #00B7FF;
+    stroke-width: 3;
+}
+
+div.analysis_section .customer_consistency_line_chart .dot, div.truck_analysis div.interface div.customer_consistency_line_chart .dot, div.zone_performance div.interface div.pickups_line_chart .dot {
+    fill: #00B7FF;
+    stroke: #ffffff;
+}
+
+div.analysis_section .customer_consistency_line_chart .overlay, div.truck_analysis div.interface div.customer_consistency_line_chart .overlay, div.zone_performance div.interface div.pickups_line_chart .overlay {
+    fill: none;
+    pointer-events: all;
+}
+
+div.analysis_section .customer_consistency_line_chart .focus circle, div.truck_analysis div.interface div.customer_consistency_line_chart .focus circle, div.zone_performance div.interface div.pickups_line_chart .focus circle {
+    fill: #ffffff;
+    stroke: #00B7FF;
+    stroke-width: 5px;
+    z-index: 1000;
+}
+
+div.analysis_section .customer_consistency_line_chart .hover-line, div.truck_analysis div.interface div.customer_consistency_line_chart .hover-line, div.zone_performance div.interface div.pickups_line_chart .hover-line {
+    stroke: #00B7FF;
+    stroke-width: 2px;
+    stroke-dasharray: 3,3;
 }

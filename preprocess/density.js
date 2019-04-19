@@ -95,6 +95,7 @@ function assignWeekDataToZone(filename) {
     return new Promise((resolve, reject) => {
         dataProvider.getWeeklyDataFromFile(filename, ['latitude', 'longitude'])
             .then(week => {
+                //WARN: leave the extensions of the filename as .csv or .xlsx. The extensions are used on the frontend
                 let weekName = filename.replace('weeks/', '');
                 for (let customer of week) {
                     if (customer && customer.hasOwnProperty('LATITUDE') && customer.hasOwnProperty('LONGITUDE')) {
