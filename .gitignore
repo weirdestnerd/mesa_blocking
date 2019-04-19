@@ -1,3 +1,10 @@
 .idea
 node_modules
 test*.*
+data/MesaCityZones.dbf
+data/MesaCityZones.prj
+data/MesaCityZones.shp
+data/MesaCityZonesDensity.dbf
+data/allcustomers.csv
+data/weeks/
+data/json

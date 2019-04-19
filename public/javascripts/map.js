@@ -19,13 +19,18 @@ function initMap(options) {
     L.tileLayer(tileUrl, tileLayerOptions).addTo(map);
 
     //  restrict zoom out to city level
-    map.setMinZoom(11.4);
+    map.setMinZoom(11);
 
     //  restrict draggable map to city bounds
-    let MesaCityNECorner = L.latLng(33.626525, -111.539644);
+    let MesaCityNECorner = L.latLng(33.703076, -111.328150);
     let MesaCitySWCorner = L.latLng(33.239434, -112.091777);
     let bounds = L.latLngBounds(MesaCityNECorner, MesaCitySWCorner);
     map.setMaxBounds(bounds);
+
+// add mesa city zone layout
+    utils.getData('city').then(layout => {
+        L.geoJSON(layout, {style: {fill: false}}).addTo(map);
+    });
 
     return map;
 }

@@ -1,0 +1,33 @@
+#!/usr/bin/env node
+
+/**
+ * Module dependecies
+ */
+let fs = require('fs');
+let path = require('path');
+let utils = require('../utils.js');
+
+/**
+ * Read 'data/' directory and make sure necessary file are present. If there's no 'data/json/' directory, then run preprocess
+ */
+fs.readdir(path.join(__dirname, '../data'), ((err, files) => {
+    if (err) return console.error(err);
+    let necessaryFiles = ['weeks', 'allcustomers.csv', 'MesaCityZones.dbf', "MesaCityZones.prj", "MesaCityZones.shp"];
+    if (!files.includes('json')) {
+        if (!necessaryFiles.every(filenames => files.includes(filenames))) {
+            return console.error(`The following files/directories are need for pre-processing: ${necessaryFiles}`);
+        }
+        let timer = new utils.Timer().startTimer();
+        require('../preprocess/city.js').run().then(() => {
+            console.log(`Preprocessed city in ${Math.floor((Date.now() - timer.getTime()) / 1000)} seconds`);
+        }).catch(console.error);
+
+        require('../preprocess/density.js').run().then(() => {
+            console.log(`Preprocessed density in ${Math.floor((Date.now() - timer.getTime()) / 1000)} seconds`);
+        }).catch(console.error);
+
+        require('../preprocess/trucks.js').run().then(() => {
+            console.log(`Preprocessed trucks in ${Math.floor((Date.now() - timer.getTime()) / 1000)} seconds`);
+        }).catch(console.error);
+    }
+}));

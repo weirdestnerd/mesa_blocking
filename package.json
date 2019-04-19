@@ -3,7 +3,8 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "start": "node ./bin/www"
+    "start": "node ./bin/www",
+    "prestart": "node ./bin/precompile"
   },
   "dependencies": {
     "cookie-parser": "~1.4.3",
@@ -13,6 +14,7 @@
     "debug": "~2.6.9",
     "enum": "^2.5.0",
     "express": "~4.16.0",
+    "hashmap": "^2.3.0",
     "http-errors": "~1.6.2",
     "jsonfile": "^5.0.0",
     "mapbox-gl": "^0.51.0",
@@ -22,7 +24,6 @@
     "read-excel-file": "^2.0.6",
     "shapefile": "^0.6.6",
     "shpjs": "^3.4.3",
-    "socket.io": "^2.1.1",
     "xlsx": "^0.14.1"
   }
 }
