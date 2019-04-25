@@ -342,6 +342,19 @@ function camelcase(value) {
 }
 
 /**
+ * Capitalize value
+ * @param {String} value
+ * @returns {String}
+ */
+function capitalize(value) {
+    let words = value.split(' ');
+    words = words.map(word => {
+        return word[0].toUpperCase() + word.substring(1).toLowerCase();
+    });
+    return words.join(' ');
+}
+
+/**
  * Checks if value is in camelcase format
  * @param value
  * @returns {boolean}
@@ -471,6 +484,7 @@ module.exports = {
     Distance: distanceBetween,
     Polygon: Polygon,
     Camelcase: camelcase,
+    Capitalize: capitalize,
     ValidateFilenames: validateFilenames,
     ExtractExtension: extractExtension,
     ValidatePath: validatePath,

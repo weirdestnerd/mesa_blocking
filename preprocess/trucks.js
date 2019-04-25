@@ -50,7 +50,7 @@ function createWeeklyTruckData(filename) {
     return new Promise((resolve, reject) => {
         let weekName = filename.replace('weeks/', '');
         trucksJSON[weekName] = {};
-        dataProvider.getWeeklyDataFromFile(filename, ['vehicle', 'start date', 'can count', 'latitude', 'longitude', 'total seconds'])
+        dataProvider.getData(filename, ['vehicle', 'start date', 'can count', 'latitude', 'longitude', 'total seconds'])
             .then(week => {
                 if (!week || week.length === 0) {
                     console.warn(`No record for ${filename}`);
