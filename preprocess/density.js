@@ -93,7 +93,7 @@ function assignPickupsToZone() {
  */
 function assignWeekDataToZone(filename) {
     return new Promise((resolve, reject) => {
-        dataProvider.getWeeklyDataFromFile(filename, ['latitude', 'longitude'])
+        dataProvider.getData(filename, ['latitude', 'longitude'])
             .then(week => {
                 //WARN: leave the extensions of the filename as .csv or .xlsx. The extensions are used on the frontend
                 let weekName = filename.replace('weeks/', '');

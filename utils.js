@@ -336,9 +336,22 @@ function Polygon(polygon) {
 function camelcase(value) {
     let words = value.split(' ');
     words = words.map(word => {
-        return word[0].toUpperCase() + word.substring(1);
+        return word[0].toUpperCase() + word.substring(1).toLowerCase();
     });
     return words.join('');
+}
+
+/**
+ * Capitalize value
+ * @param {String} value
+ * @returns {String}
+ */
+function capitalize(value) {
+    let words = value.split(' ');
+    words = words.map(word => {
+        return word[0].toUpperCase() + word.substring(1).toLowerCase();
+    });
+    return words.join(' ');
 }
 
 /**
@@ -471,6 +484,7 @@ module.exports = {
     Distance: distanceBetween,
     Polygon: Polygon,
     Camelcase: camelcase,
+    Capitalize: capitalize,
     ValidateFilenames: validateFilenames,
     ExtractExtension: extractExtension,
     ValidatePath: validatePath,

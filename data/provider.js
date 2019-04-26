@@ -227,6 +227,9 @@ function getCSVData(filepath, schema) {
 function readFile(filename, schema) {
     return new Promise((resolve, reject) => {
         let filepath = path.join(__dirname, filename);
+        if(!fs.existsSync(filepath)) {
+            reject('File does not exist in \'data\' directory ', filepath);
+        }
         let type = utils.ExtractExtension(filename, 'csv') || utils.ExtractExtension(filename, 'xlsx');
         if (!utils.ValidatePath(filename, type)) {
             reject('Provided path is invalid');
@@ -408,7 +411,7 @@ function countFiles(weekname) {
 }
 
 module.exports = {
-    getWeeklyDataFromFile: readFile,
+    getData: readFile,
     getWeeklyDataFromDatabase: readDatabase,
     getAllCustomers: readCustomersFile,
     getCityGeoJSON: readGeoJSON,
