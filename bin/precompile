@@ -8,6 +8,10 @@ let path = require('path');
 let utils = require('../utils.js');
 const Util = require('util');
 
+/**
+ * Rename files with non alphanumerics and non camelcase format
+ * @returns {Promise<any>}
+ */
 function renameWeekFiles() {
     return new Promise((resolve, reject) => {
         let readDir = Util.promisify(fs.readdir);
@@ -25,10 +29,14 @@ function renameWeekFiles() {
             return isAlphaNumeric(word) && isCamelcase(word);
         }
 
-        readDir(path.join(__dirname, '../data/weeks'))
-            .then(weekFiles => {
-                if (!weekFiles.every(isValidName)) {
-                    let apply = weekFiles.map(filename => {
+        // readDir(path.join(__dirname, '../data/weeks'))
+        // look thru every single file in 'data/' directory
+        //TODO: only change files and not folders
+        readDir(path.join(__dirname, '../data'))
+            .then(files => {
+                if (!files.every(isValidName)) {
+                    let apply = files.map(filename => {
+                        // TODO: change
                         let currentPath = path.join(__dirname, '../data/weeks/');
                         let validFilename = utils.Camelcase(filename.replace(/[^A-Za-z0-9.]/g, ''));
                         return renameFile(currentPath + filename, currentPath + validFilename)
@@ -45,28 +53,38 @@ function runPreprocess() {
         console.log(`Preprocessed city layout in ${Math.floor((Date.now() - timer.getTime()) / 1000)} seconds`);
     }).catch(end);
 
-    require('../preprocess/density.js').run().then(() => {
-        console.log(`Preprocessed density per zone in ${Math.floor((Date.now() - timer.getTime()) / 1000)} seconds`);
-    }).catch(end);
+    // TODO; ignoring density for now. See TODOs in preprocess/density
+    // require('../preprocess/density.js').run().then(() => {
+    //     console.log(`Preprocessed density per zone in ${Math.floor((Date.now() - timer.getTime()) / 1000)} seconds`);
+    // }).catch(end);
 
-    require('../preprocess/trucks.js').run().then(() => {
-        console.log(`Preprocessed all trucks in ${Math.floor((Date.now() - timer.getTime()) / 1000)} seconds`);
-    }).catch(end);
+    // TODO: setup the process for detecting changes in data/
+    // require('../preprocess/trucks.js').run().then(() => {
+    //     console.log(`Preprocessed all trucks in ${Math.floor((Date.now() - timer.getTime()) / 1000)} seconds`);
+    // }).catch(end);
 }
 
 /**
  * Read 'data/' directory and make sure necessary file are present. If there's no 'data/json/' directory, then run preprocess
  */
-fs.readdir(path.join(__dirname, '../data'), (err, files) => {
+fs.readdir(path.join(__dirname, '../_data'), (err, files) => {
     if (err) return end(err);
-    let necessaryFiles = ['weeks', `allcustomers.csv`, 'MesaCityZones.dbf', "MesaCityZones.prj", "MesaCityZones.shp"];
     if (!files.includes('json')) {
-        if (!necessaryFiles.every(filenames => files.includes(filenames))) {
-            return end(`The following files or directories are needed for pre-processing: ${necessaryFiles}. One of these files is not available at the 'data/' directory.`);
-        }
-        renameWeekFiles().then(runPreprocess).catch(end);
+        //TODO: uncomment below to validate filenames in data/
+        // renameWeekFiles().then(runPreprocess).catch(end);
+        runPreprocess()
     }
 });
+// fs.readdir(path.join(__dirname, '../data'), (err, files) => {
+//     if (err) return end(err);
+//     let necessaryFiles = ['weeks', `allcustomers.csv`, 'MesaCityZones.dbf', "MesaCityZones.prj", "MesaCityZones.shp"];
+//     if (!files.includes('json')) {
+//         if (!necessaryFiles.every(filenames => files.includes(filenames))) {
+//             return end(`The following files or directories are needed for pre-processing: ${necessaryFiles}. One of these files is not available at the 'data/' directory.`);
+//         }
+//         renameWeekFiles().then(runPreprocess).catch(end);
+//     }
+// });
 
 function end(err) {
     if (err) console.error(err);

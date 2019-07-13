@@ -395,11 +395,12 @@ function validateFilenames(filenames, callback) {
 
     filenames = filenames.map(name => {
         if (!isCamelCase(name)) {
-            let oldPath = path.join(__dirname, '../data/weeks/' + name);
-            let newPath = path.join(__dirname, '../data/weeks/' + camelcase(name));
-            fs.renameSync(oldPath, newPath, error => {
-                if (error) callback(error)
-            });
+            //TODO: use directory of files
+            // let oldPath = path.join(__dirname, '../data/weeks/' + name);
+            // let newPath = path.join(__dirname, '../data/weeks/' + camelcase(name));
+            // fs.renameSync(oldPath, newPath, error => {
+            //     if (error) callback(error)
+            // });
             return camelcase(name);
         }
         return name;

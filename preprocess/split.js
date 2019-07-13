@@ -1,4 +1,4 @@
-const dataProvider = require('../data/provider');
+const dataProvider = require('../_data/provider');
 const createCSVWriter = require('csv-writer').createArrayCsvWriter;
 const utils = require('../utils');
 const path = require('path');

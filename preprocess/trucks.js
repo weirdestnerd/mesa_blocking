@@ -1,7 +1,7 @@
 /**
  * Module dependencies
  */
-const dataProvider = require('../data/provider');
+const dataProvider = require('../_data/provider');
 const utils = require('../utils');
 const jsonfile = require('jsonfile');
 const path = require('path');

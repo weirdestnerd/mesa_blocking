@@ -1,7 +1,7 @@
 /**
  * Module dependencies
  */
-const dataProvider = require('../data/provider');
+const dataProvider = require('../_data/provider');
 const Polygon = require('../utils').Polygon;
 const fs = require('fs');
 const path = require('path');
@@ -46,6 +46,7 @@ function findIndexOfRoute(route) {
  */
 function assignCustomerToZone() {
     return new Promise((resolve, reject) => {
+        // TODO: getAllCustomers will be removed in the future and won't return value for all customers
         dataProvider.getAllCustomers(['latitude', 'longitude', 'route'])
             .then(allCustomers => {
                 for (let customer of allCustomers) {
@@ -155,7 +156,7 @@ function savePropertiesInDBF() {
     });
     //WARN: dbf saves headers as long as 8 letters
     let buffer = dbf.structure(allProperties);
-    let dbfPath = path.join(__dirname, '../data/MesaCityZonesDensity.dbf');
+    let dbfPath = path.join(__dirname, '../_data/MesaCityZonesDensity.dbf');
 
     function toBuffer(ab) {
         let buffer = Buffer.alloc(ab.byteLength);

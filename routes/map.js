@@ -8,7 +8,7 @@ const camelcase = require('../utils').Camelcase;
 /* GET /map page. */
 router.get('/', function(req, res, next) {
     //  read filenames in data/week
-    fs.readdir(path.join(__dirname, '../data/weeks'), (error, files) => {
+    fs.readdir(path.join(__dirname, '../data'), (error, files) => {
         if (error) {
             console.error(error);
             return;
@@ -22,7 +22,7 @@ router.get('/', function(req, res, next) {
 router.param('datarequest', (req, res, next, requestedfile) => {
     let filepath;
     switch (requestedfile) {
-        case 'city': filepath = path.join(__dirname, '../data/json/CityZonesGeoJSON.json');
+        case 'city': filepath = path.join(__dirname, '../_data/json/CityZonesGeoJSON.json');
             break;
         case 'density': filepath = path.join(__dirname, '../data/json/ZonesGeoJSON.json');
             break;

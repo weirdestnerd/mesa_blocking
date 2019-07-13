@@ -1,4 +1,4 @@
-const dataProvider = require('../data/provider');
+const dataProvider = require('../_data/provider');
 const path = require('path');
 const utils = require('../utils');
 const jsonfile = require('jsonfile');
@@ -10,11 +10,11 @@ let zoneGeoJSON;
  * Save global zoneGeoJSON in JSON file
  */
 function saveCityZonesAsJSON() {
-    let filepath = path.join(__dirname, '../data/json');
+    let filepath = path.join(__dirname, '../_data/json');
     if(!fs.existsSync(filepath)) {
         fs.mkdirSync(filepath)
     }
-    filepath = path.join(__dirname, '../data/json/CityZonesGeoJSON.json');
+    filepath = path.join(__dirname, '../_data/json/CityZonesGeoJSON.json');
     jsonfile.writeFile(filepath, zoneGeoJSON)
         .catch(console.error);
 }
