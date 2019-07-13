@@ -156,7 +156,7 @@ function savePropertiesInDBF() {
     });
     //WARN: dbf saves headers as long as 8 letters
     let buffer = dbf.structure(allProperties);
-    let dbfPath = path.join(__dirname, '../_data/MesaCityZonesDensity.dbf');
+    let dbfPath = path.join(__dirname, '../_data/mapDensity.dbf');
 
     function toBuffer(ab) {
         let buffer = Buffer.alloc(ab.byteLength);

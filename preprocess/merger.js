@@ -71,6 +71,6 @@ function mine() {
             return feature;
         });
         let mergedFeatures = zoneGeoJSON.features.concat(customerAsFeatures);
-        saveToDBF(mergedFeatures, '../_data/MesaCityZones.dbf')
+        saveToDBF(mergedFeatures, '../_data/map.dbf')
     })
 }
